@@ -18,8 +18,8 @@ sudo usermod -aG docker $USER
 cd infra
 cp .env.example .env
 # مقادیر changeme-local-only را در .env با مقادیر واقعی (فقط برای Dev) جایگزین کنید
-docker compose --env-file .env up -d
-docker compose ps
+docker-compose --env-file .env up -d
+docker-compose ps
 ```
 
 سرویس‌ها:
@@ -35,12 +35,12 @@ docker compose ps
 - **جداسازی دیتابیس:** Keycloak و Backend روی یک Instance مشترک Postgres اما در دو Database جدا قرار می‌گیرند (`infra/postgres/init/01-databases.sql`) — نه ادغام، نه Instance جدا؛ مطابق [ADR-0007](../docs/adr/0007-database-strategy.md).
 - **ریسک شناخته‌شده (فعلاً پذیرفته‌شده برای Dev):** اتصال Keycloak به Postgres در حال حاضر از همان کاربر Superuser استفاده می‌کند، نه یک نقش با حداقل دسترسی (Least Privilege). ساخت یک کاربر اختصاصی محدود به دیتابیس `keycloak` نیازمند تزریق مقدار از `.env` داخل اسکریپت `init` است (پیچیدگی اضافه‌ی غیرضروری برای این فاز)؛ این مورد باید پیش از Phase 20 (Production Deployment) اصلاح شود.
 - **Keycloak نسخه‌ی Pin‌شده:** `quay.io/keycloak/keycloak:26.0` — قبل از Phase 4 بررسی کنید که نسخه‌ی پایدارتر منتشر نشده باشد.
-- هیچ Realm/Client‌ای هنوز Import نشده (`keycloak/import/` خالی است) — موضوع Phase 4.
+- **Phase 4:** فایل Realm (`keycloak/import/sepahan-realm.json`) اضافه شد — با بالا آمدن Keycloak به‌صورت خودکار Import می‌شود. جزئیات و چک‌لیست تأیید: [docs/authentication/keycloak-realm.md](../docs/authentication/keycloak-realm.md).
 - هیچ مقدار واقعی (رمز عبور و غیره) در Git commit نشده؛ فقط `.env.example` با مقادیر Placeholder.
 
 ## توقف و پاک‌سازی
 
 ```bash
-docker compose down          # نگه‌داشتن Volume (داده باقی می‌ماند)
-docker compose down -v       # حذف کامل Volume (داده از بین می‌رود — فقط برای شروع تمیز Dev)
+docker-compose down          # نگه‌داشتن Volume (داده باقی می‌ماند)
+docker-compose down -v       # حذف کامل Volume (داده از بین می‌رود — فقط برای شروع تمیز Dev)
 ```

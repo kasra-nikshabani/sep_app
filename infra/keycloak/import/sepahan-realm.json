@@ -1,0 +1,150 @@
+{
+  "realm": "sepahan",
+  "displayName": "SEPahan Super App — Fan ID",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": false,
+  "loginWithUserNameAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fa", "en"],
+  "defaultLocale": "fa",
+
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "passwordPolicy": "length(10) and notUsername(undefined) and passwordHistory(3)",
+
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": true,
+  "offlineSessionMaxLifespan": 5184000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+
+  "roles": {
+    "realm": [
+      { "name": "fan", "description": "کاربر عادی هوادار — نقش پیش‌فرض هر Fan ID" },
+      { "name": "vip", "description": "کاربر VIP — سهمیه/امتیاز ویژه" },
+      { "name": "admin", "description": "مدیر سیستم — دسترسی Admin Panel" },
+      { "name": "gate-operator", "description": "اپراتور اسکن بلیط در گیت (معادل کاربران گیت Django)" },
+      { "name": "partner", "description": "سیستم/سرویس Partner خارجی" }
+    ]
+  },
+
+  "clientScopes": [
+    {
+      "name": "fan-identity",
+      "description": "Claimهای اختصاصی Fan ID برای نگاشت به سیستم‌های موجود (از جمله Django) — ADR-0003",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "national-code",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "national_code",
+            "claim.name": "national_code",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "phone-number",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "phone_number",
+            "claim.name": "phone_number",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "clients": [
+    {
+      "clientId": "mobile-app",
+      "name": "SEPahan Mobile App",
+      "description": "React Native — Authorization Code + PKCE، بدون Client Secret (Public Client)",
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "redirectUris": [
+        "sepahan://auth/callback",
+        "http://localhost:8081/*"
+      ],
+      "webOrigins": ["+"],
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "fan-identity"],
+      "optionalClientScopes": ["offline_access"]
+    },
+    {
+      "clientId": "admin-panel",
+      "name": "SEPahan Admin Panel",
+      "description": "Next.js (Server-side) — Authorization Code استاندارد، Confidential Client",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/api/auth/callback/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "fan-identity"]
+    },
+    {
+      "clientId": "backend-service",
+      "name": "SEPahan Spring Boot Backend",
+      "description": "اعتبارسنجی توکن (Resource Server) + Service Account برای فراخوانی‌های بین‌سرویسی در صورت نیاز",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles"]
+    },
+    {
+      "clientId": "django-ticketing",
+      "name": "Django Ticketing (Legacy — ticket.sepahansc)",
+      "description": "فقط اعتبارسنجی JWT در برابر JWKS — بدون جریان OIDC کامل. bearerOnly طبق ADR-0004",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "fan-identity"]
+    }
+  ]
+}
