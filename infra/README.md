@@ -2,15 +2,17 @@
 
 محیط توسعه‌ی محلی (Development) با Docker Compose: PostgreSQL، Redis، Keycloak. **این تنظیمات برای Production نیستند** — Deployment واقعی موضوع Phase 20 است.
 
+> **وضعیت:** این Stack به‌صورت واقعی بالا آورده شد و تست شد (نه فقط بررسی Syntax) — هر سه سرویس `Up (healthy)` هستند، Realm `sepahan` با موفقیت Import شد (۴ Client، ۵ نقش، Client Scope `fan-identity` با هر دو Protocol Mapper تأیید شدند مستقیماً از دیتابیس Keycloak).
+
 ## پیش‌نیاز: دسترسی Docker
 
-در Phase 0 مشخص شد کاربر فعلی این ماشین به Docker Socket دسترسی ندارد (`permission denied ... docker.sock`). قبل از اجرای دستورات زیر، این را روی ماشین خودتان اجرا کنید (نیاز به sudo دارد، من این کار را خودم انجام نمی‌دهم چون تغییر سطح دسترسی سیستم است):
+اگر با خطای `permission denied ... docker.sock` مواجه شدید (کاربر فعلی عضو گروه `docker` نیست)، این را در ترمینال خودتان اجرا کنید:
 
 ```bash
 sudo usermod -aG docker $USER
 ```
 
-بعد از این دستور باید یک‌بار از سیستم Log out/Log in کنید (یا `newgrp docker` بزنید) تا عضویت گروه اعمال شود.
+⚠️ **نکته‌ی مهم که در راه‌اندازی اول این پروژه کشف شد:** فقط باز کردن یک ترمینال جدید کافی نیست — چون هر ترمینال گروه‌های خودش را از Session دسکتاپی که از آن باز شده به ارث می‌برد، نه از فایل `/etc/group` زنده. برای اعمال شدن واقعی عضویت گروه، باید **کامل از سیستم Log out و دوباره Log in کنید** (یا ساده‌تر: `reboot`). بعد از آن `groups` باید `docker` را نشان بدهد.
 
 ## راه‌اندازی
 
@@ -26,17 +28,18 @@ docker-compose ps
 
 | سرویس | پورت پیش‌فرض | یادداشت |
 |---|---|---|
-| PostgreSQL | `5432` | دو دیتابیس مجزا می‌سازد: `sepahan_app` (برای Backend، از Phase 6) و `keycloak` |
-| Redis | `6379` | با رمز عبور (`--requirepass`) |
+| PostgreSQL | `5433` (نه ۵۴۳۲) | دو دیتابیس مجزا می‌سازد: `sepahan_app` (برای Backend، از Phase 6) و `keycloak`؛ پورت ۵۴۳۲ عمداً استفاده نشد چون یک PostgreSQL سیستمی از قبل روی این ماشین در حال اجراست |
+| Redis | `6380` (نه ۶۳۷۹) | با رمز عبور (`--requirepass`)؛ همان دلیل بالا برای تغییر پورت |
 | Keycloak | `8080` | حالت `start-dev`؛ Admin Console: `http://localhost:8080` |
 
 ## تصمیم‌ها و محدودیت‌های شناخته‌شده‌ی این فاز
 
 - **جداسازی دیتابیس:** Keycloak و Backend روی یک Instance مشترک Postgres اما در دو Database جدا قرار می‌گیرند (`infra/postgres/init/01-databases.sql`) — نه ادغام، نه Instance جدا؛ مطابق [ADR-0007](../docs/adr/0007-database-strategy.md).
 - **ریسک شناخته‌شده (فعلاً پذیرفته‌شده برای Dev):** اتصال Keycloak به Postgres در حال حاضر از همان کاربر Superuser استفاده می‌کند، نه یک نقش با حداقل دسترسی (Least Privilege). ساخت یک کاربر اختصاصی محدود به دیتابیس `keycloak` نیازمند تزریق مقدار از `.env` داخل اسکریپت `init` است (پیچیدگی اضافه‌ی غیرضروری برای این فاز)؛ این مورد باید پیش از Phase 20 (Production Deployment) اصلاح شود.
-- **Keycloak نسخه‌ی Pin‌شده:** `quay.io/keycloak/keycloak:26.0` — قبل از Phase 4 بررسی کنید که نسخه‌ی پایدارتر منتشر نشده باشد.
-- **Phase 4:** فایل Realm (`keycloak/import/sepahan-realm.json`) اضافه شد — با بالا آمدن Keycloak به‌صورت خودکار Import می‌شود. جزئیات و چک‌لیست تأیید: [docs/authentication/keycloak-realm.md](../docs/authentication/keycloak-realm.md).
+- **Keycloak نسخه‌ی Pin‌شده:** `keycloak/keycloak:26.7.1` روی **Docker Hub** (نه `quay.io`). نسخه‌ی اولیه‌ی ۲۶.۰ از Registry حذف شده بود؛ در تلاش بعدی هم `quay.io` مدام ۴۰۳ Forbidden روی دانلود Layer می‌داد (احتمالاً محدودیت دسترسی شبکه‌ای به quay.io) در حالی‌که Postgres/Redis از Docker Hub بدون مشکل Pull شدند — پس Image رسمی Keycloak را از Docker Hub (که Mirror فعال و به‌روز دارد) گرفتیم.
+- **Phase 4:** فایل Realm (`keycloak/import/sepahan-realm.json`) اضافه شد و با موفقیت Import و تأیید شد. جزئیات کامل، باگ‌های پیداشده در این مسیر، و نکته‌ی مهم درباره‌ی رمز Admin: [docs/authentication/keycloak-realm.md](../docs/authentication/keycloak-realm.md).
 - هیچ مقدار واقعی (رمز عبور و غیره) در Git commit نشده؛ فقط `.env.example` با مقادیر Placeholder.
+- **`docker-compose` نسخه‌ی نصب‌شده روی این ماشین قدیمی و کنارگذاشته‌شده است (v1.29.2، نه Plugin رسمی `docker compose`).** یک باگ شناخته‌شده‌ی این نسخه با Docker Engine جدید دارد: هنگام Recreate کردن یک Container موجود (نه ساخت از صفر) با خطای `KeyError: 'ContainerConfig'` مواجه می‌شود. راه‌حل: قبل از `up`، Container مشکل‌دار را با `docker rm -f <name>` پاک کنید تا از مسیر «صفر تا صد بساز» عبور کند، نه «Recreate». نصب Docker Compose Plugin رسمی (`docker compose`) این مشکل را کامل حل می‌کند ولی نصب Package جدید نیاز به تأیید شماست.
 
 ## توقف و پاک‌سازی
 

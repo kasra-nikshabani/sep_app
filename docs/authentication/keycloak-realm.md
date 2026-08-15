@@ -4,9 +4,9 @@
 
 ## فایل Import
 
-`infra/keycloak/import/sepahan-realm.json` — با بالا آمدن Compose (که در Phase 3 پیکربندی شد) این فایل به‌صورت خودکار در مسیر `/opt/keycloak/data/import` داخل Container قرار می‌گیرد و Keycloak در `start-dev` آن را Import می‌کند.
+`infra/keycloak/import/sepahan-realm.json` — با بالا آمدن Compose (که در Phase 3 پیکربندی شد) این فایل به‌صورت خودکار در مسیر `/opt/keycloak/data/import` داخل Container قرار می‌گیرد و Keycloak با فلگ `--import-realm` آن را Import می‌کند.
 
-> **مهم — اعتبارسنجی Runtime این فایل هنوز انجام نشده.** به دلیل عدم دسترسی من به Docker Daemon روی این ماشین (مستند در گزارش Phase 3)، فقط از نظر Syntax (`python -m json.load`) بررسی شده، نه با یک Keycloak واقعی. لطفاً پس از `docker-compose up` طبق چک‌لیست پایین همین سند تأیید کنید.
+> **تأیید شده با اجرای واقعی.** بعد از حل مشکل دسترسی Docker (نیاز به Log out/Log in کامل، نه فقط ترمینال جدید)، این Stack واقعاً بالا آمد و Import مستقیماً از دیتابیس Keycloak تأیید شد: Realm `sepahan` فعال، هر ۴ Client با نوع درست (`mobile-app` Public، `django-ticketing` Bearer-only، ...)، ۵ نقش سفارشی، و Client Scope `fan-identity` با هر دو Protocol Mapper. جزئیات باگ‌هایی که در این مسیر پیدا و رفع شدند، پایین همین سند.
 
 ## چه چیزی در این Realm ساخته می‌شود
 
@@ -40,14 +40,25 @@
 - **هیچ User یا Client Secret‌ای در این فایل نیست.** برای Clientهای Confidential (`admin-panel`, `backend-service`, `django-ticketing`) چون فیلد `secret` مشخص نشده، Keycloak هنگام Import یک مقدار تصادفی خودش تولید می‌کند — این مقدار را باید بعد از بالا آمدن از Admin Console بخوانید (زیر) و در `.env` سرویس مربوطه بگذارید، هرگز در Git.
 - ساخت کاربر تستی هم عمداً در این فایل نیست (چون یعنی رمز عبور در Git) — چک‌لیست پایین نحوه‌ی ساخت دستی یک کاربر تست را توضیح می‌دهد.
 
-## چک‌لیست تأیید (لطفاً شما اجرا و نتیجه را گزارش کنید)
+## باگ‌هایی که در تست واقعی پیدا و رفع شدند
 
-۱. `cd infra && docker-compose --env-file .env up -d` (طبق Phase 3)
-۲. باز کردن `http://localhost:8080` → ورود با `KEYCLOAK_ADMIN`/`KEYCLOAK_ADMIN_PASSWORD` که در `.env` گذاشتید
-۳. بررسی این‌که Realm به‌نام **sepahan** در لیست Realmها وجود دارد (یعنی Import موفق بوده)
-۴. Realm sepahan → **Clients** → بررسی چهار Client بالا وجود دارند
-۵. برای `admin-panel` و `backend-service` و `django-ticketing`: تب **Credentials** → کپی مقدار Secret تولیدشده (لازم برای Phase 6/14)
-۶. Realm sepahan → **Realm roles** → بررسی ۵ نقش وجود دارند
-۷. (اختیاری، برای تست دستی) **Users** → **Add user** → یک کاربر تست بسازید، در تب **Attributes** مقدار `national_code` و `phone_number` را دستی اضافه کنید، در تب **Credentials** یک رمز موقت بگذارید → سپس با Client `admin-panel` می‌توانید جریان Authorization Code را با مرورگر تست کنید (نیاز به یک صفحه‌ی Callback واقعی دارد که هنوز نساخته‌ایم — یک تست کامل End-to-end واقعی‌تر در Phase 14 ممکن می‌شود)
+این‌ها همه در Commit همین فاز اصلاح شده‌اند؛ برای شفافیت ثبت می‌شوند:
 
-اگر هرکدام از این مراحل با خطا مواجه شد، خروجی/Screenshot را برایم بفرستید تا `sepahan-realm.json` را اصلاح کنم.
+1. **فیلد جعلی `loginWithUserNameAllowed`** در JSON — چنین فیلدی اصلاً در `RealmRepresentation` کیکلوک ۲۶ وجود ندارد؛ Import را کامل Fail می‌کرد (`Unrecognized field`). حذف شد.
+2. **فلگ `--import-realm` جا افتاده بود** در `docker-compose.yml` — بدون آن، Keycloak فایل‌های پوشه‌ی `import/` را کلاً نادیده می‌گیرد، حتی اگر Volume درست Mount شده باشد. اضافه شد.
+3. **Image نسخه‌ی `26.0` از Registry حذف شده بود**، و نسخه‌ی جدیدتر (`26.7.1`) روی `quay.io` هم به‌طور مداوم ۴۰۳ Forbidden می‌داد (به نظر می‌رسد یک محدودیت شبکه‌ای برای `quay.io` وجود دارد) — سوییچ به همان Image رسمی از **Docker Hub** (`keycloak/keycloak:26.7.1`) که بدون مشکل Pull شد.
+4. **Healthcheck نداشت** — چون Image فاقد `curl`/`wget` است، از ترفند `/dev/tcp` خود Bash روی مسیر مدیریتی Health (پورت ۹۰۰۰) استفاده شد.
+
+## ⚠️ نکته‌ی مهم درباره‌ی رمز Admin
+
+`KEYCLOAK_ADMIN_PASSWORD` فقط **یک‌بار**، در همان اولین Boot که Master Realm ساخته می‌شود، به‌عنوان رمز کاربر Admin موقت تنظیم می‌شود. اگر بعداً مقدار آن را در `.env` عوض کنید ولی Volume دیتابیس (`postgres_data`) پاک نشود، رمز واقعی همچنان همان مقدار اولیه می‌ماند — تغییر `.env` به‌تنهایی رمز را عوض نمی‌کند. برای عوض کردن واقعی رمز Admin: یا از خود Admin Console (بعد از ورود با رمز فعلی) عوض کنید، یا کامل Volume را با `docker-compose down -v` پاک و از نو Import کنید (در محیط Dev بی‌خطر است، چون داده‌ی واقعی هنوز وجود ندارد).
+
+**یادآوری امنیتی:** اگر رمز Admin را در یک پیام/ترمینال به‌اشتراک‌گذاشته‌شده Paste کرده‌اید (مثلاً برای دیباگ)، آن را تغییردهنده کنید — به هر مقداری که در یک مکالمه تایپ شده، به‌عنوان لو‌رفته نگاه کنید.
+
+## چک‌لیست تأیید دستی (اختیاری، تکمیلی)
+
+موارد اصلی از طریق دیتابیس تأیید شده‌اند؛ اگر خواستید از طریق Admin Console هم چشمی بررسی کنید:
+
+۱. باز کردن `http://localhost:8080` → ورود با `KEYCLOAK_ADMIN` / رمز فعلی (طبق نکته‌ی بالا)
+۲. Realm sepahan → **Clients** → برای `admin-panel`/`backend-service`/`django-ticketing`: تب **Credentials** → کپی Secret تولیدشده (لازم برای Phase 6/14 — این را فقط در `.env` سرویس مربوطه بگذارید، نه در پیام یا Git)
+۳. (اختیاری، برای تست End-to-end) **Users** → **Add user** → یک کاربر تست بسازید، در تب **Attributes** مقدار `national_code`/`phone_number` را اضافه کنید — تست کامل جریان Authorization Code نیاز به یک صفحه‌ی Callback واقعی دارد که در Phase 14 ساخته می‌شود.

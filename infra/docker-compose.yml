@@ -38,9 +38,9 @@ services:
       retries: 10
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0
+    image: keycloak/keycloak:26.7.1
     restart: unless-stopped
-    command: ["start-dev"]
+    command: ["start-dev", "--import-realm"]
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:?لطفاً KEYCLOAK_ADMIN را در .env تنظیم کنید}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?لطفاً KEYCLOAK_ADMIN_PASSWORD را در .env تنظیم کنید}
@@ -52,11 +52,18 @@ services:
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
-      # محل Import شدن Realm Export در Phase 4 — فعلاً خالی
+      # فایل Realm Export (Phase 4) — با --import-realm بالا در startup خوانده می‌شود
       - ./keycloak/import:/opt/keycloak/data/import:ro
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      # ایمیج Keycloak فاقد curl/wget است؛ از /dev/tcp خود Bash برای چک مسیر Health استفاده شده
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
 
 volumes:
   postgres_data:
