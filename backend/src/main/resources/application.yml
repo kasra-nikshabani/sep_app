@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: sepapp-backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:${INFRA_POSTGRES_PORT:5433}/sepahan_app
+    username: sepahan_backend
+    password: ${BACKEND_DB_PASSWORD}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+
+  flyway:
+    schemas: public,users,fan
+    default-schema: public
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:${INFRA_KEYCLOAK_PORT:8080}/realms/sepahan
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never

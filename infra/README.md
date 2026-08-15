@@ -22,7 +22,12 @@ cp .env.example .env
 # مقادیر changeme-local-only را در .env با مقادیر واقعی (فقط برای Dev) جایگزین کنید
 docker-compose --env-file .env up -d
 docker-compose ps
+./keycloak/fix-user-profile.sh    # اجباری — بدون این هیچ کاربری نمی‌تواند وارد شود؛ دلیل در docs/authentication/keycloak-realm.md
 ```
+
+⚠️ اگر مقدار رمزی در `.env` کاراکتر `$` یا `` ` `` یا `"` داشته باشد (مثلاً یک رمز پیچیده‌ی Admin)، آن را داخل تک‌کوتیشن بگذارید (`KEYCLOAK_ADMIN_PASSWORD='...'`) — وگرنه اگر جایی این فایل با `source` خوانده شود، آن کاراکترها به‌عنوان کد Shell تفسیر می‌شوند و رمز را بی‌صدا خراب می‌کنند (در Phase 6 دقیقاً همین اتفاق افتاد).
+
+**اگر بعد از بالا آمدن، رمز Admin که در `.env` گذاشتید کار نکرد:** طبیعی است — طبق نکته‌ی زیر (بخش Keycloak Realm)، رمز Admin فقط در همان اولین Boot واقعی اعمال می‌شود، نه در هر تغییر بعدی `.env`. برای اطمینان از هماهنگی کامل، `docker-compose down -v && docker-compose --env-file .env up -d` را با `.env` نهایی خود اجرا کنید.
 
 سرویس‌ها:
 
@@ -35,7 +40,8 @@ docker-compose ps
 ## تصمیم‌ها و محدودیت‌های شناخته‌شده‌ی این فاز
 
 - **جداسازی دیتابیس:** Keycloak و Backend روی یک Instance مشترک Postgres اما در دو Database جدا قرار می‌گیرند (`infra/postgres/init/01-databases.sql`) — نه ادغام، نه Instance جدا؛ مطابق [ADR-0007](../docs/adr/0007-database-strategy.md).
-- **ریسک شناخته‌شده (فعلاً پذیرفته‌شده برای Dev):** اتصال Keycloak به Postgres در حال حاضر از همان کاربر Superuser استفاده می‌کند، نه یک نقش با حداقل دسترسی (Least Privilege). ساخت یک کاربر اختصاصی محدود به دیتابیس `keycloak` نیازمند تزریق مقدار از `.env` داخل اسکریپت `init` است (پیچیدگی اضافه‌ی غیرضروری برای این فاز)؛ این مورد باید پیش از Phase 20 (Production Deployment) اصلاح شود.
+- **ریسک شناخته‌شده (فعلاً پذیرفته‌شده برای Dev):** اتصال Keycloak به Postgres همچنان از کاربر Superuser استفاده می‌کند، نه یک نقش Least-Privilege — این مورد باید پیش از Phase 20 (Production Deployment) اصلاح شود.
+- **Phase 6:** Backend یک نقش اختصاصی Postgres دارد (`sepahan_backend`) که فقط مالک دیتابیس `sepahan_app` است — نه Superuser، و صریحاً از اتصال به دیتابیس `keycloak` هم منع شده (`REVOKE CONNECT ... FROM PUBLIC`، چون Postgres پیش‌فرض به همه‌ی نقش‌ها اجازه‌ی Connect به هر دیتابیسی را می‌دهد). رمز آن در `.env` به‌نام `BACKEND_DB_PASSWORD` است.
 - **Keycloak نسخه‌ی Pin‌شده:** `keycloak/keycloak:26.7.1` روی **Docker Hub** (نه `quay.io`). نسخه‌ی اولیه‌ی ۲۶.۰ از Registry حذف شده بود؛ در تلاش بعدی هم `quay.io` مدام ۴۰۳ Forbidden روی دانلود Layer می‌داد (احتمالاً محدودیت دسترسی شبکه‌ای به quay.io) در حالی‌که Postgres/Redis از Docker Hub بدون مشکل Pull شدند — پس Image رسمی Keycloak را از Docker Hub (که Mirror فعال و به‌روز دارد) گرفتیم.
 - **Phase 4:** فایل Realm (`keycloak/import/sepahan-realm.json`) اضافه شد و با موفقیت Import و تأیید شد. جزئیات کامل، باگ‌های پیداشده در این مسیر، و نکته‌ی مهم درباره‌ی رمز Admin: [docs/authentication/keycloak-realm.md](../docs/authentication/keycloak-realm.md).
 - هیچ مقدار واقعی (رمز عبور و غیره) در Git commit نشده؛ فقط `.env.example` با مقادیر Placeholder.

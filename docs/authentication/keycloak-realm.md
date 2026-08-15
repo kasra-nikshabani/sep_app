@@ -6,7 +6,17 @@
 
 `infra/keycloak/import/sepahan-realm.json` — با بالا آمدن Compose (که در Phase 3 پیکربندی شد) این فایل به‌صورت خودکار در مسیر `/opt/keycloak/data/import` داخل Container قرار می‌گیرد و Keycloak با فلگ `--import-realm` آن را Import می‌کند.
 
-> **تأیید شده با اجرای واقعی.** بعد از حل مشکل دسترسی Docker (نیاز به Log out/Log in کامل، نه فقط ترمینال جدید)، این Stack واقعاً بالا آمد و Import مستقیماً از دیتابیس Keycloak تأیید شد: Realm `sepahan` فعال، هر ۴ Client با نوع درست (`mobile-app` Public، `django-ticketing` Bearer-only، ...)، ۵ نقش سفارشی، و Client Scope `fan-identity` با هر دو Protocol Mapper. جزئیات باگ‌هایی که در این مسیر پیدا و رفع شدند، پایین همین سند.
+> **تأیید شده با یک جریان کامل End-to-end واقعی (Phase 6).** یک کاربر تست ساخته شد، از `mobile-app` توکن واقعی گرفته شد، Claimهای `national_code`/`phone_number`/`realm_access.roles` در توکن بررسی شدند، و همان توکن مستقیماً به Endpoint واقعی Backend (`GET /api/v1/users/me`) زده شد — نه فقط بررسی دیتابیس. جزئیات باگ‌هایی که در این مسیر پیدا و رفع شدند، پایین همین سند — دو مورد از آن‌ها (شماره‌های ۵ و ۶) واقعاً جدی بودند و بدون تست End-to-end واقعی هرگز کشف نمی‌شدند.
+
+## ⚠️ قدم اجباری بعد از هر Import تازه: `fix-user-profile.sh`
+
+```bash
+cd infra
+docker-compose --env-file .env up -d
+./keycloak/fix-user-profile.sh
+```
+
+بدون این اسکریپت، **هیچ کاربری نمی‌تواند وارد شود** (خطای «Account is not fully set up») و Claimهای `national_code`/`phone_number` همیشه خالی می‌مانند، حتی اگر همه‌چیز دیگر درست باشد. دلیل کامل در باگ‌های ۵ و ۶ پایین.
 
 ## چه چیزی در این Realm ساخته می‌شود
 
@@ -48,6 +58,8 @@
 2. **فلگ `--import-realm` جا افتاده بود** در `docker-compose.yml` — بدون آن، Keycloak فایل‌های پوشه‌ی `import/` را کلاً نادیده می‌گیرد، حتی اگر Volume درست Mount شده باشد. اضافه شد.
 3. **Image نسخه‌ی `26.0` از Registry حذف شده بود**، و نسخه‌ی جدیدتر (`26.7.1`) روی `quay.io` هم به‌طور مداوم ۴۰۳ Forbidden می‌داد (به نظر می‌رسد یک محدودیت شبکه‌ای برای `quay.io` وجود دارد) — سوییچ به همان Image رسمی از **Docker Hub** (`keycloak/keycloak:26.7.1`) که بدون مشکل Pull شد.
 4. **Healthcheck نداشت** — چون Image فاقد `curl`/`wget` است، از ترفند `/dev/tcp` خود Bash روی مسیر مدیریتی Health (پورت ۹۰۰۰) استفاده شد.
+5. **حضور کلید `clientScopes` در JSON، ساخت خودکار Scopeهای استاندارد Keycloak را کلاً غیرفعال می‌کرد.** وقتی Realm JSON خودش یک آرایه‌ی `clientScopes` می‌دهد (حتی اگر فقط شامل یک Scope سفارشی مثل `fan-identity` باشد)، Keycloak فرض می‌کند این آرایه کامل و نهایی است و دیگر Scopeهای درونی خودش (`profile`, `roles`, `web-origins`, `acr`, `basic`, `email`, ...) را نمی‌سازد. نتیجه: توکن صادرشده حتی فاقد `sub` و `realm_access` بود. **کشف شد با گرفتن یک توکن واقعی و نگاه به Claimهای آن — نه با بررسی Import Log یا دیتابیس.** رفع: همه‌ی Scopeهای استاندارد از یک Instance سالم Export و همراه با `fan-identity` در `clientScopes` نهایی قرار گرفتند.
+6. **Declarative User Profile به‌صورت پیش‌فرض یک Allowlist سخت‌گیرانه است.** تا وقتی `national_code`/`phone_number` صریحاً در Schema این Profile تعریف نشوند، Keycloak این Attributeها را هنگام ساخت کاربر **بی‌صدا نادیده می‌گیرد** (بدون خطا، فقط ذخیره نمی‌شوند) — یعنی Protocol Mapperهای `fan-identity` همیشه مقدار خالی برمی‌گرداندند چون خودِ Attribute هرگز در دیتابیس نبود. علاوه بر آن، همان Profile پیش‌فرض `email`/`firstName`/`lastName` را Required می‌کند که باعث خطای «Account is not fully set up» (VERIFY_PROFILE) در ورود می‌شد. **این تنظیم بخشی از RealmRepresentation قابل Import نیست** (به‌صورت Component داخلی جدا ذخیره می‌شود)، پس نمی‌توانست مثل بقیه در `sepahan-realm.json` باشد — رفع آن در اسکریپت جدید `infra/keycloak/fix-user-profile.sh` (که باید بعد از هر Import تازه یک‌بار اجرا شود) قرار گرفت.
 
 ## ⚠️ نکته‌ی مهم درباره‌ی رمز Admin
 
@@ -57,8 +69,8 @@
 
 ## چک‌لیست تأیید دستی (اختیاری، تکمیلی)
 
-موارد اصلی از طریق دیتابیس تأیید شده‌اند؛ اگر خواستید از طریق Admin Console هم چشمی بررسی کنید:
+جریان اصلی (Import → fix-user-profile.sh → ساخت کاربر → توکن → `/api/v1/users/me`) در Phase 6 به‌طور کامل و واقعی تست شد. اگر خواستید از طریق Admin Console هم چشمی بررسی کنید:
 
 ۱. باز کردن `http://localhost:8080` → ورود با `KEYCLOAK_ADMIN` / رمز فعلی (طبق نکته‌ی بالا)
-۲. Realm sepahan → **Clients** → برای `admin-panel`/`backend-service`/`django-ticketing`: تب **Credentials** → کپی Secret تولیدشده (لازم برای Phase 6/14 — این را فقط در `.env` سرویس مربوطه بگذارید، نه در پیام یا Git)
-۳. (اختیاری، برای تست End-to-end) **Users** → **Add user** → یک کاربر تست بسازید، در تب **Attributes** مقدار `national_code`/`phone_number` را اضافه کنید — تست کامل جریان Authorization Code نیاز به یک صفحه‌ی Callback واقعی دارد که در Phase 14 ساخته می‌شود.
+۲. Realm sepahan → **Clients** → برای `admin-panel`/`backend-service`/`django-ticketing`: تب **Credentials** → کپی Secret تولیدشده (لازم برای Phase 14 — این را فقط در `.env` سرویس مربوطه بگذارید، نه در پیام یا Git)
+۳. **Users** → **Add user** → یک کاربر تست بسازید، در تب **Attributes** مقدار `national_code`/`phone_number` را اضافه کنید، در تب **Credentials** رمز بگذارید (`temporary: off`) — چون `mobile-app` به‌صورت پیش‌فرض `directAccessGrantsEnabled: false` دارد (طبق ADR-0003، فقط PKCE)، برای تست دستی با Postman/curl باید موقتاً این فلگ را روی `mobile-app` فعال کنید و بعد از تست خاموش کنید؛ تست واقعی جریان Authorization Code کامل نیاز به یک صفحه‌ی Callback واقعی دارد که در Phase 14/15 ساخته می‌شود.

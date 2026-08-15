@@ -21,7 +21,7 @@ backend/.gradle/
 backend/HELP.md
 *.class
 *.jar
-!.mvn/wrapper/maven-wrapper.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
 
 # Node / Next.js (Phase 2+)
 node_modules/

@@ -148,6 +148,7 @@ sepapp/
 | [0006](../adr/0006-inhouse-theater-ticketing.md) | موتور داخلی فروش بلیط تئاتر |
 | [0007](../adr/0007-database-strategy.md) | استراتژی دیتابیس |
 | [0008](../adr/0008-new-user-jit-provisioning.md) | Provisioning خودکار کاربر جدید Fan ID در Django (Phase 5) |
+| [0009](../adr/0009-spring-boot-baseline.md) | Spring Boot 3.5.x + Maven + Flyway (Phase 6) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

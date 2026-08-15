@@ -12,6 +12,8 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_SUPERUSER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?لطفاً POSTGRES_SUPERUSER_PASSWORD را در .env تنظیم کنید}
+      # فقط توسط infra/postgres/init/02-create-app-role.sh در اولین initdb خوانده می‌شود
+      SEPAHAN_BACKEND_DB_PASSWORD: ${BACKEND_DB_PASSWORD:?لطفاً BACKEND_DB_PASSWORD را در .env تنظیم کنید}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
