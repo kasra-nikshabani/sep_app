@@ -16,8 +16,14 @@ spring:
       ddl-auto: validate
 
   flyway:
-    schemas: public,users,fan
+    schemas: public,users,fan,ticketing
     default-schema: public
+
+  data:
+    redis:
+      host: localhost
+      port: ${INFRA_REDIS_PORT:6380}
+      password: ${INFRA_REDIS_PASSWORD}
 
   security:
     oauth2:

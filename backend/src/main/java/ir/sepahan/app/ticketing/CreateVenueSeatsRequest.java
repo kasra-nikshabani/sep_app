@@ -1,0 +1,12 @@
+package ir.sepahan.app.ticketing;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import java.util.List;
+
+public record CreateVenueSeatsRequest(@NotEmpty @Valid List<SeatSpec> seats) {
+
+    public record SeatSpec(@NotBlank String section, @NotBlank String rowLabel, @NotBlank String seatNumber) {
+    }
+}

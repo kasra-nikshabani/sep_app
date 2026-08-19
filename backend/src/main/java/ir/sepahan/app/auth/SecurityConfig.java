@@ -2,6 +2,7 @@ package ir.sepahan.app.auth;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -11,8 +12,13 @@ import org.springframework.security.web.SecurityFilterChain;
 /**
  * توکن Bearer صادرشده توسط Keycloak Realm «sepahan» را اعتبارسنجی می‌کند (ADR-0003).
  * بدون Session — این یک Resource Server کاملاً Stateless است.
+ *
+ * EnableMethodSecurity: از Phase 8 به بعد Controllerها از @PreAuthorize("hasRole('admin')")
+ * طبق docs/authentication/rbac-matrix.md استفاده می‌کنند (نقش‌ها با پیشوند ROLE_ در
+ * KeycloakRoleConverter نگاشت شده‌اند).
  */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
