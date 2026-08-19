@@ -1,6 +1,6 @@
 # ADR-0004: الگوی اتصال SSO به Django Ticketing
 
-- **وضعیت:** پیشنهادی — نیازمند تأیید کارفرما (اجرای واقعی در Phase 7)
+- **وضعیت:** پیاده‌سازی شده (Phase 7 — Branch محلی، هنوز Merge/Deploy نشده)
 - **تصمیم‌گیرندگان:** کارفرما + Architect
 
 ## Context
@@ -56,3 +56,14 @@ Django Ticketing
 
 - ~~سناریوی دقیق کاربر جدید موبایل بدون رکورد Django چیست؟~~ پاسخ داده شد — [ADR-0008](0008-new-user-jit-provisioning.md).
 - آیا Webhook از Django به Spring Boot برای رویداد خرید بلیط (جهت Loyalty) پیاده می‌شود یا Polling کافی است؟ (همچنان باز، موضوع Phase 12/13)
+
+## پیاده‌سازی واقعی (Phase 7)
+
+Branch محلی `feature/keycloak-sso` روی Repository `ticket.sepahansc/football_tickets` (Commit `0bf63d4`) — **فقط Commit محلی، بدون Push/Merge/Deploy**، طبق تصمیم صریح کارفرما در همین گفتگو.
+
+دو تفاوت جزئی نسبت به طراحی اولیه‌ی بالا که در حین کدنویسی واقعی مشخص شدند:
+
+1. **Middleware، نه `AuthenticationBackend`.** بند ۲ بالا از عبارت «Authentication Backend جدید» استفاده کرده بود؛ در عمل، چون این پروژه از DRF استفاده نمی‌کند (Views ساده‌ی Django) و نیاز به احراز هویت Bearer در سطح هر درخواست (نه فقط لحظه‌ی `login()`) دارد، الگوی درست‌تر یک Middleware اضافی (`KeycloakBearerAuthenticationMiddleware`) است که بعد از `AuthenticationMiddleware` استاندارد جنگو ثبت می‌شود: فقط وقتی `request.user` هنوز Anonymous است (یعنی Session موجود نیست) تلاش می‌کند از روی Bearer Token کاربر را تشخیص دهد. نتیجه‌ی نهایی («افزودنی، نه جایگزین») دقیقاً همان چیزی است که این ADR خواسته بود؛ فقط مکانیزم پیاده‌سازی دقیق‌تر شد.
+2. **بررسی `azp` (Authorized Party)، نه فقط امضا/صادرکننده.** برای جلوگیری از این‌که یک Client ناشناس داخل همان Realm بتواند کاربر Django بسازد، توکن‌ها فقط اگر `azp` آن‌ها در فهرست `KEYCLOAK_TRUSTED_CLIENTS` (پیش‌فرض: `mobile-app,admin-panel`) باشد پذیرفته می‌شوند.
+
+جزئیات کامل، دلیل هر تصمیم، و ۱۳ تست (شامل رد توکن با صادرکننده/Client نامعتبر و منقضی) در Commit بالا مستند شده‌اند.
