@@ -1,6 +1,6 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 9). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 10). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
 
 ## اجرا (محلی، در برابر Stack زنده‌ی `infra/`)
 
@@ -19,7 +19,9 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 
 تست شده تا این نقطه (هم با تست خودکار، هم با درخواست HTTP واقعی):
 - `GET /api/v1/users/me` — با اولین توکن معتبر یک کاربر، رکورد `users.app_user` + `fan.fan_profile` به‌صورت خودکار ساخته می‌شود (JIT، معادل [ADR-0008](../docs/adr/0008-new-user-jit-provisioning.md) برای Django) و در فراخوانی‌های بعدی همان رکورد برگردانده می‌شود — نه رکورد تکراری.
-- `/api/v1/ticketing/**` — مرور رویداد/صندلی، رزرو، لغو، تکمیل خرید (ساده‌شده، بدون پرداخت واقعی هنوز)؛ نقش `admin` برای ساخت سالن/رویداد اجباری است (۴۰۳ برای نقش `fan`)؛ رزرو هم‌زمان دو کاربر روی یک صندلی — دقیقاً یکی موفق می‌شود (ADR-0010، تست با ۲۵ Thread واقعاً هم‌زمان).
+- `/api/v1/ticketing/**` — مرور رویداد/صندلی، رزرو، لغو؛ نقش `admin` برای ساخت سالن/رویداد اجباری است (۴۰۳ برای نقش `fan`)؛ رزرو هم‌زمان دو کاربر روی یک صندلی — دقیقاً یکی موفق می‌شود (ADR-0010، تست با ۲۵ Thread واقعاً هم‌زمان). صدور بلیط دیگر مسیر ساده‌شده نیست — فقط از طریق `payments` (زیر) اتفاق می‌افتد.
+- `/api/v1/payments/**` — پرداخت واقعی (Zibal Sandbox، تأیید سرور-به-سرور، Idempotency) + `FakePaymentProvider` برای تست بدون شبکه؛ جریان کامل رزرو→پرداخت→Callback→صدور بلیط با هر دو Provider تست شده (ADR-0011).
+- `/api/v1/shop/**` — کاتالوگ/سبد/Checkout/کد تخفیف/مرجوعی؛ کاهش اتمی موجودی زیر بار هم‌زمانی واقعی (۲۰ Thread روی آخرین واحد موجودی — دقیقاً یکی موفق می‌شود)، RBAC (`admin` برای کاتالوگ/گردش‌کار مرجوعی)، جریان کامل Checkout→پرداخت→`paid` از طریق همان رویداد Payment (ADR-0012).
 
 ## مرجع تصمیم‌ها
 
@@ -30,6 +32,9 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - مدل داده‌ی users/fan: [docs/database/erd-users-fan.md](../docs/database/erd-users-fan.md)
 - مدل داده‌ی ticketing: [docs/database/erd-ticketing.md](../docs/database/erd-ticketing.md)
 - قفل هم‌زمانی رزرو صندلی: [ADR-0010](../docs/adr/0010-ticketing-redis-locking.md)
+- معماری Payment (Zibal + Event-driven decoupling): [ADR-0011](../docs/adr/0011-payment-architecture.md)
+- ماژول Shop (Inventory اتمی، Provider Interface برای Shipping، گردش‌کار Returns): [ADR-0012](../docs/adr/0012-shop-module.md)
+- مدل داده‌ی shop: [docs/database/erd-shop.md](../docs/database/erd-shop.md)
 
 ## نقشه‌ی ماژول‌ها
 
@@ -40,10 +45,10 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 | `fan` | Fan ID، کارت عضویت | ✅ Phase 6 (`fan_profile`)؛ `membership_card` فقط در Migration، بدون Entity/Service (منطق صدور هنوز تصمیم‌گیری نشده) |
 | `news` | CMS اخبار | — Phase 11 |
 | `sports` / `matches` | محتوای ورزشی + متادیتای نمایشی فوتبال (بدون صندلی/بلیط — آن در Django است) | — |
-| `ticketing` | موتور عمومی Venue/Event/Seat — فعلاً فقط برای **تئاتر** ([ADR-0006](../docs/adr/0006-inhouse-theater-ticketing.md)) | ✅ Phase 8 (Reservation کامل؛ Ticket فقط با مسیر ساده‌شده‌ی بدون پرداخت واقعی — Phase 9) |
-| `shop` / `products` / `cart` / `orders` | فروشگاه اینترنتی (بازسازی کامل) | — Phase 10 |
-| `payments` | ماژول مرکزی پرداخت + Provider Interface | — Phase 9 |
-| `wallet` | کیف‌پول Fan (جدا از Wallet داخلی Django) | — Phase 9 |
+| `ticketing` | موتور عمومی Venue/Event/Seat — فعلاً فقط برای **تئاتر** ([ADR-0006](../docs/adr/0006-inhouse-theater-ticketing.md)) | ✅ Phase 8 (Reservation)، ✅ Phase 9 (پرداخت واقعی و صدور بلیط از طریق `payments`، جایگزین مسیر ساده‌شده) |
+| `shop` / `products` / `cart` / `orders` | فروشگاه اینترنتی (بازسازی کامل) | ✅ Phase 10 |
+| `payments` | ماژول مرکزی پرداخت + Provider Interface | ✅ Phase 9 |
+| `wallet` | کیف‌پول Fan (جدا از Wallet داخلی Django) | — بدون فاز اختصاصی مشخص در بریف؛ فعلاً فقط `PaymentPurpose.wallet_topup` به‌عنوان Placeholder وجود دارد |
 | `loyalty` | امتیاز/سطح/جوایز، Configurable | — Phase 12 |
 | `entertainment` / `insurance` / `vehicle` / `travel` | دامنه‌های Provider-محور | — Phase 13 |
 | `notifications` | SMS/Push/Email | — Phase 16 |

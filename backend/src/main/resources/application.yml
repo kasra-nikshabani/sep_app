@@ -16,7 +16,7 @@ spring:
       ddl-auto: validate
 
   flyway:
-    schemas: public,users,fan,ticketing,payments
+    schemas: public,users,fan,ticketing,payments,shop
     default-schema: public
 
   data:
@@ -40,7 +40,10 @@ management:
     health:
       show-details: never
 
-# ---- Payment (ADR-0011) ----
+# ---- Payment (ADR-0011) / Shop (ADR-0012) ----
+# نکته: هر دو زیر یک کلید ریشه‌ی sepahan هستند -- دو بلوک sepahan جدا در یک فایل YAML
+# باعث می‌شود پارسر (SnakeYAML) دومی را جایگزین اولی کند، نه Merge (یک باگ واقعی که
+# در همین فاز، قبل از اجرا، در ویرایش این فایل پیش آمد و همین‌جا اصلاح شد).
 sepahan:
   payments:
     provider: fake # fake | zibal -- عمداً پیش‌فرض fake تا هیچ تماس شبکه‌ای ناخواسته‌ای رخ ندهد
@@ -48,6 +51,9 @@ sepahan:
     zibal:
       base-url: https://gateway.zibal.ir
       merchant: zibal # مرچنت تستی عمومی خود Zibal (طبق ADR-0011)؛ قبل از Production باید Merchant واقعی جایگزین شود
+  shop:
+    order-ttl-seconds: 1800 # مهلت پرداخت سفارش قبل از آزادسازی خودکار موجودی
+    cleanup-interval-ms: 60000
 
 resilience4j:
   circuitbreaker:

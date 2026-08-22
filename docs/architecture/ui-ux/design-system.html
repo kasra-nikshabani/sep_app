@@ -311,6 +311,25 @@
   .news-card .body h3 { font-family: 'Vazirmatn', sans-serif; font-size: 15px; font-weight: 500; margin: 0 0 6px; text-wrap: balance; }
   .news-card .body .meta { font-size: 11px; color: var(--color-text-muted); }
 
+  /* Shop product card (Phase 10) */
+  .product-card { border-radius: 14px; overflow: hidden; border: 1px solid var(--color-border); background: var(--color-surface); box-shadow: var(--shadow-card); }
+  .product-card .thumb { height: 108px; background: linear-gradient(140deg, var(--color-border), var(--color-surface-alt, var(--color-surface))); display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: 11px; }
+  .product-card .body { padding: 12px 14px 14px; }
+  .product-card .body h3 { font-family: 'Vazirmatn', sans-serif; font-size: 15px; font-weight: 500; margin: 0 0 4px; }
+  .product-card .body .variant { font-size: 11.5px; color: var(--color-text-muted); margin-bottom: 8px; }
+  .product-card .body .price-row { display: flex; align-items: center; justify-content: space-between; }
+  .product-card .body .price { font-weight: 600; }
+
+  /* Cart line item (Phase 10) */
+  .cart-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+  .cart-line .info h4 { font-size: 13.5px; font-weight: 500; margin: 0 0 2px; }
+  .cart-line .info .sub { font-size: 11px; color: var(--color-text-muted); }
+  .cart-line .qty { font-size: 12px; color: var(--color-text-muted); }
+  .cart-line .amount { font-weight: 600; font-size: 13px; }
+  .cart-summary { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--color-border); display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+  .cart-summary .row { display: flex; justify-content: space-between; color: var(--color-text-muted); }
+  .cart-summary .row.total { color: var(--color-text); font-weight: 600; font-size: 14px; padding-top: 6px; border-top: 1px solid var(--color-border); }
+
   /* Mobile bottom nav preview */
   .phone-frame {
     width: 100%; max-width: 320px; margin-inline-start: auto;
@@ -434,7 +453,7 @@
         <p class="eyebrow">۰۴</p>
         <h2>کامپوننت‌های پایه</h2>
       </div>
-      <p class="note">نمونه‌های زیر با محتوای واقعی دامنه (بلیط، پرداخت، اخبار) ساخته شده‌اند، نه محتوای نمایشی.</p>
+      <p class="note">نمونه‌های زیر با محتوای واقعی دامنه (بلیط، پرداخت، اخبار، فروشگاه) ساخته شده‌اند، نه محتوای نمایشی.</p>
     </div>
 
     <div class="comp-grid">
@@ -537,10 +556,57 @@
         </div>
       </div>
     </div>
+
+    <div class="comp-grid" style="margin-top:16px">
+      <div class="comp-card">
+        <p class="eyebrow">کارت محصول فروشگاه (Phase 10)</p>
+        <div class="product-card">
+          <div class="thumb">تصویر محصول</div>
+          <div class="body">
+            <h3>پیراهن رسمی سپاهان</h3>
+            <div class="variant">سایز: L · رنگ: مشکی</div>
+            <div class="price-row">
+              <span class="price">۱٬۵۰۰٬۰۰۰ تومان</span>
+              <span class="pill success"><span class="dot"></span>موجود</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <p class="eyebrow">سبد خرید و جمع فاکتور</p>
+        <div class="cart-line">
+          <div class="info">
+            <h4>پیراهن رسمی سپاهان</h4>
+            <div class="sub">سایز L · SKU: JERSEY-L</div>
+          </div>
+          <div class="qty">۲ عدد</div>
+          <div class="amount">۳٬۰۰۰٬۰۰۰ تومان</div>
+        </div>
+        <div class="cart-summary">
+          <div class="row"><span>جمع کالاها</span><span>۳٬۰۰۰٬۰۰۰ تومان</span></div>
+          <div class="row"><span>تخفیف (کد SEPAHAN10)</span><span>−۳۰۰٬۰۰۰ تومان</span></div>
+          <div class="row"><span>هزینه‌ی ارسال</span><span>۶۶٬۰۰۰ تومان</span></div>
+          <div class="row total"><span>مبلغ قابل پرداخت</span><span>۲٬۷۶۶٬۰۰۰ تومان</span></div>
+        </div>
+      </div>
+
+      <div class="comp-card">
+        <p class="eyebrow">وضعیت سفارش / مرجوعی فروشگاه</p>
+        <div class="pill-row">
+          <span class="pill warning"><span class="dot"></span>در انتظار پرداخت</span>
+          <span class="pill success"><span class="dot"></span>پرداخت‌شده</span>
+          <span class="pill info"><span class="dot"></span>ارسال‌شده</span>
+          <span class="pill success"><span class="dot"></span>تحویل‌شده</span>
+          <span class="pill danger"><span class="dot"></span>لغوشده / منقضی</span>
+          <span class="pill warning"><span class="dot"></span>درخواست مرجوعی</span>
+        </div>
+      </div>
+    </div>
   </section>
 
   <footer class="foot">
-    <span>SEPahan Super App — Design System v0.2 (Phase 1، مبتنی بر نشان رسمی باشگاه)</span>
+    <span>SEPahan Super App — Design System v0.3 (به‌روزرسانی‌شده تا Phase 10، مبتنی بر نشان رسمی باشگاه)</span>
     <span>کدهای دقیق رنگ (HEX/Pantone رسمی) در صورت دریافت Brand Guideline کامل باشگاه قابل تنظیم دقیق‌ترند، بدون تغییر در ساختار کامپوننت‌ها.</span>
   </footer>
 
