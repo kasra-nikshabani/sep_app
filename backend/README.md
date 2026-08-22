@@ -1,6 +1,6 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 10). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 11). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
 
 ## اجرا (محلی، در برابر Stack زنده‌ی `infra/`)
 
@@ -22,6 +22,7 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - `/api/v1/ticketing/**` — مرور رویداد/صندلی، رزرو، لغو؛ نقش `admin` برای ساخت سالن/رویداد اجباری است (۴۰۳ برای نقش `fan`)؛ رزرو هم‌زمان دو کاربر روی یک صندلی — دقیقاً یکی موفق می‌شود (ADR-0010، تست با ۲۵ Thread واقعاً هم‌زمان). صدور بلیط دیگر مسیر ساده‌شده نیست — فقط از طریق `payments` (زیر) اتفاق می‌افتد.
 - `/api/v1/payments/**` — پرداخت واقعی (Zibal Sandbox، تأیید سرور-به-سرور، Idempotency) + `FakePaymentProvider` برای تست بدون شبکه؛ جریان کامل رزرو→پرداخت→Callback→صدور بلیط با هر دو Provider تست شده (ADR-0011).
 - `/api/v1/shop/**` — کاتالوگ/سبد/Checkout/کد تخفیف/مرجوعی؛ کاهش اتمی موجودی زیر بار هم‌زمانی واقعی (۲۰ Thread روی آخرین واحد موجودی — دقیقاً یکی موفق می‌شود)، RBAC (`admin` برای کاتالوگ/گردش‌کار مرجوعی)، جریان کامل Checkout→پرداخت→`paid` از طریق همان رویداد Payment (ADR-0012).
+- `/api/v1/news/**` — کاتالوگ/برچسب/خبر/رسانه؛ RBAC (Draft فقط برای admin قابل مشاهده، ۴۰۴ برای fan)، آپلود واقعی تصویر روی دیسک محلی + سرو عمومی از `/media/**` (بدون Auth، چون `<img>` مرورگر Header نمی‌فرستد)، هر ویرایش یک Revision Snapshot می‌سازد، انتشار خودکار خبر زمان‌بندی‌شده با یک Job دوره‌ای (تأیید شده با یک خبر واقعی زمان‌بندی‌شده که بعد از رسیدن موعد خودکار published شد) (ADR-0013).
 
 ## مرجع تصمیم‌ها
 
@@ -35,6 +36,8 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - معماری Payment (Zibal + Event-driven decoupling): [ADR-0011](../docs/adr/0011-payment-architecture.md)
 - ماژول Shop (Inventory اتمی، Provider Interface برای Shipping، گردش‌کار Returns): [ADR-0012](../docs/adr/0012-shop-module.md)
 - مدل داده‌ی shop: [docs/database/erd-shop.md](../docs/database/erd-shop.md)
+- ماژول News/CMS (Media دیسک محلی، Revision، انتشار زمان‌بندی‌شده): [ADR-0013](../docs/adr/0013-news-cms.md)
+- مدل داده‌ی news: [docs/database/erd-news.md](../docs/database/erd-news.md)
 
 ## نقشه‌ی ماژول‌ها
 
@@ -43,7 +46,7 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 | `auth` | اعتبارسنجی توکن Keycloak، نگاشت نقش‌ها | ✅ Phase 6 |
 | `users` | پروفایل کاربر (آینه‌ی Keycloak Subject) | ✅ Phase 6 |
 | `fan` | Fan ID، کارت عضویت | ✅ Phase 6 (`fan_profile`)؛ `membership_card` فقط در Migration، بدون Entity/Service (منطق صدور هنوز تصمیم‌گیری نشده) |
-| `news` | CMS اخبار | — Phase 11 |
+| `news` | CMS اخبار | ✅ Phase 11 |
 | `sports` / `matches` | محتوای ورزشی + متادیتای نمایشی فوتبال (بدون صندلی/بلیط — آن در Django است) | — |
 | `ticketing` | موتور عمومی Venue/Event/Seat — فعلاً فقط برای **تئاتر** ([ADR-0006](../docs/adr/0006-inhouse-theater-ticketing.md)) | ✅ Phase 8 (Reservation)، ✅ Phase 9 (پرداخت واقعی و صدور بلیط از طریق `payments`، جایگزین مسیر ساده‌شده) |
 | `shop` / `products` / `cart` / `orders` | فروشگاه اینترنتی (بازسازی کامل) | ✅ Phase 10 |

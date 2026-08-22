@@ -30,6 +30,10 @@ public class SecurityConfig {
                         // Zibal مرورگر کاربر را مستقیم به این مسیر Redirect می‌کند (بدون Bearer Token) --
                         // امنیت واقعی از طریق Verify سرور-به-سرور در PaymentService تأمین می‌شود، نه Auth این مسیر (ADR-0011)
                         .requestMatchers("/api/v1/payments/*/callback").permitAll()
+                        // تصاویر خبر باید در تگ <img> مرورگر بدون هیچ Header سفارشی بارگذاری شوند --
+                        // مرورگر برای <img src> هرگز Authorization Header نمی‌فرستد؛ محتوا هم صرفاً
+                        // فایل رسانه‌ی عمومی است، نه داده‌ی حساس (ADR-0013)
+                        .requestMatchers("/media/**").permitAll()
                         // بدون این خط، وقتی یک Controller اجازه‌دار (بالا) خطایی پرتاب کند (مثلاً 404)،
                         // Forward داخلی Tomcat به /error دوباره از این زنجیره‌ی امنیتی رد می‌شود و چون
                         // /error مجاز نیست، پاسخ واقعی (404) با یک 401 گمراه‌کننده جایگزین می‌شود --

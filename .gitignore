@@ -23,6 +23,9 @@ backend/HELP.md
 *.jar
 !backend/.mvn/wrapper/maven-wrapper.jar
 
+# Local runtime data (Phase 11+) -- رسانه‌ی آپلودشده روی دیسک محلی، طبق ADR-0013
+backend/data/
+
 # Node / Next.js (Phase 2+)
 node_modules/
 admin-panel/.next/
