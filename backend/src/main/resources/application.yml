@@ -16,7 +16,7 @@ spring:
       ddl-auto: validate
 
   flyway:
-    schemas: public,users,fan,ticketing
+    schemas: public,users,fan,ticketing,payments
     default-schema: public
 
   data:
@@ -39,3 +39,30 @@ management:
   endpoint:
     health:
       show-details: never
+
+# ---- Payment (ADR-0011) ----
+sepahan:
+  payments:
+    provider: fake # fake | zibal -- عمداً پیش‌فرض fake تا هیچ تماس شبکه‌ای ناخواسته‌ای رخ ندهد
+    callback-base-url: http://localhost:${server.port}
+    zibal:
+      base-url: https://gateway.zibal.ir
+      merchant: zibal # مرچنت تستی عمومی خود Zibal (طبق ADR-0011)؛ قبل از Production باید Merchant واقعی جایگزین شود
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      zibal:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+  retry:
+    instances:
+      zibal:
+        max-attempts: 3
+        wait-duration: 500ms
+  timelimiter:
+    instances:
+      zibal:
+        timeout-duration: 8s

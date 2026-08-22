@@ -150,6 +150,7 @@ sepapp/
 | [0008](../adr/0008-new-user-jit-provisioning.md) | Provisioning خودکار کاربر جدید Fan ID در Django (Phase 5) |
 | [0009](../adr/0009-spring-boot-baseline.md) | Spring Boot 3.5.x + Maven + Flyway (Phase 6) |
 | [0010](../adr/0010-ticketing-redis-locking.md) | قفل هم‌زمانی رزرو صندلی با Redis (Phase 8) |
+| [0011](../adr/0011-payment-architecture.md) | معماری Payment: Zibal + Event-driven decoupling (Phase 9) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

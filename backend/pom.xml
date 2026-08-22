@@ -51,6 +51,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
+        <dependency>
+            <!-- برای Annotationهای Resilience4j (@CircuitBreaker/@Retry) که Proxy-based/AOP هستند -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Circuit Breaker/Retry/Timeout برای فراخوانی‌های خروجی Provider (ADR-0005/ADR-0011) -->
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+            <version>2.4.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.flywaydb</groupId>

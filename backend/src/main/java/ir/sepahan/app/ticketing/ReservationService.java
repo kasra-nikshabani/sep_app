@@ -1,5 +1,9 @@
 package ir.sepahan.app.ticketing;
 
+import ir.sepahan.app.payments.Payment;
+import ir.sepahan.app.payments.PaymentPurpose;
+import ir.sepahan.app.payments.PaymentService;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -9,6 +13,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,6 +30,7 @@ public class ReservationService {
     private final EventSeatRepository eventSeatRepository;
     private final ReservationRepository reservationRepository;
     private final TicketRepository ticketRepository;
+    private final PaymentService paymentService;
     private final Duration reservationTtl;
 
     public ReservationService(
@@ -32,11 +38,13 @@ public class ReservationService {
             EventSeatRepository eventSeatRepository,
             ReservationRepository reservationRepository,
             TicketRepository ticketRepository,
+            PaymentService paymentService,
             @Value("${sepahan.ticketing.reservation-ttl-seconds:600}") long reservationTtlSeconds) {
         this.redisTemplate = redisTemplate;
         this.eventSeatRepository = eventSeatRepository;
         this.reservationRepository = reservationRepository;
         this.ticketRepository = ticketRepository;
+        this.paymentService = paymentService;
         this.reservationTtl = Duration.ofSeconds(reservationTtlSeconds);
     }
 
@@ -83,10 +91,14 @@ public class ReservationService {
         releaseSeat(reservation);
     }
 
+    /**
+     * جایگزین confirmPurchase ساده‌شده‌ی Phase 8. طبق ADR-0011، ticketing مستقیم بلیط
+     * صادر نمی‌کند -- فقط از PaymentService یک Payment واقعی می‌خواهد و آدرس بازگشت به
+     * درگاه را برمی‌گرداند. صدور واقعی بلیط در {@link #issueTicket(UUID)} است که فقط با
+     * رویداد PaymentSucceededEvent فعال می‌شود (نه مستقیم از این‌جا).
+     */
     @Transactional
-    public Ticket confirmPurchase(UUID reservationId, UUID userId) {
-        // ساده‌شده -- بدون پرداخت واقعی. اتصال به ماژول payments واقعی موضوع Phase 9
-        // است؛ این‌جا فقط زیرساخت Reservation -> Ticket تست می‌شود.
+    public Payment initiatePayment(UUID reservationId, UUID userId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new SeatUnavailableException("رزروی با این شناسه یافت نشد"));
         if (!reservation.getUserId().equals(userId)) {
@@ -95,6 +107,30 @@ public class ReservationService {
         if (reservation.getExpiresAt().isBefore(OffsetDateTime.now())) {
             releaseSeat(reservation);
             throw new SeatUnavailableException("مهلت این رزرو تمام شده -- دوباره تلاش کنید");
+        }
+
+        BigDecimal amount = reservation.getEventSeat().getPrice();
+        return paymentService.createPayment(PaymentPurpose.ticket_purchase, reservationId, userId, amount, "خرید بلیط تئاتر");
+    }
+
+    /**
+     * فقط توسط TicketIssuanceListener (بعد از PaymentSucceededEvent) صدا زده می‌شود.
+     * Idempotent: اگر Reservation دیگر وجود نداشته باشد (مثلاً به‌خاطر تحویل تکراری
+     * Event یا Race نامحتمل)، فرض بر این است که قبلاً پردازش شده -- خطا نمی‌دهد.
+     */
+    /**
+     * REQUIRES_NEW عمداً است، نه REQUIRED: این متد از داخل TicketIssuanceListener و
+     * دقیقاً در فاز AFTER_COMMIT یک تراکنش دیگر (PaymentService.handleCallback) صدا
+     * زده می‌شود. تراکنش «بیرونی» در آن لحظه هنوز کاملاً از Thread جدا/آزاد نشده؛ اگر
+     * این‌جا REQUIRED می‌بود، ممکن بود این تراکنش «بپیوندد» به منابع تراکنش قبلی که
+     * دارد جمع‌آوری می‌شود و تغییرات هرگز واقعاً Commit نشوند (بدون هیچ Exception ای --
+     * دقیقاً همین باگ در تست واقعی این فاز رخ داد و با REQUIRES_NEW رفع شد).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void issueTicket(UUID reservationId, UUID userId) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
+        if (reservation == null) {
+            return;
         }
 
         EventSeat seat = reservation.getEventSeat();
@@ -107,8 +143,6 @@ public class ReservationService {
 
         reservationRepository.delete(reservation);
         redisTemplate.delete(lockKey(seat.getId()));
-
-        return ticket;
     }
 
     private void releaseSeat(Reservation reservation) {

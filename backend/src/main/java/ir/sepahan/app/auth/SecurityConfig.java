@@ -27,6 +27,14 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        // Zibal مرورگر کاربر را مستقیم به این مسیر Redirect می‌کند (بدون Bearer Token) --
+                        // امنیت واقعی از طریق Verify سرور-به-سرور در PaymentService تأمین می‌شود، نه Auth این مسیر (ADR-0011)
+                        .requestMatchers("/api/v1/payments/*/callback").permitAll()
+                        // بدون این خط، وقتی یک Controller اجازه‌دار (بالا) خطایی پرتاب کند (مثلاً 404)،
+                        // Forward داخلی Tomcat به /error دوباره از این زنجیره‌ی امنیتی رد می‌شود و چون
+                        // /error مجاز نیست، پاسخ واقعی (404) با یک 401 گمراه‌کننده جایگزین می‌شود --
+                        // در تست واقعی همین فاز کشف شد.
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();

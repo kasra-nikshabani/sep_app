@@ -3,6 +3,10 @@ package ir.sepahan.app.ticketing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ir.sepahan.app.payments.Payment;
+import ir.sepahan.app.payments.PaymentRepository;
+import ir.sepahan.app.payments.PaymentService;
+import ir.sepahan.app.payments.PaymentStatus;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -43,6 +47,10 @@ class ReservationServiceTest {
     private ReservationRepository reservationRepository;
     @Autowired
     private TicketRepository ticketRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentService paymentService;
 
     private Venue venue;
     private Event event;
@@ -56,6 +64,7 @@ class ReservationServiceTest {
     @AfterEach
     void tearDown() {
         // داده‌ی هر تست را کامل پاک می‌کنیم تا دیتابیس Dev مشترک آلوده نماند
+        paymentRepository.deleteAll();
         ticketRepository.deleteAll();
         reservationRepository.deleteAll();
         eventSeatRepository.deleteAll();
@@ -113,25 +122,62 @@ class ReservationServiceTest {
     }
 
     @Test
-    void confirmPurchase_createsTicket_andMarksSeatSold() {
+    void initiatePayment_rejects_other_users_reservation() {
+        EventSeat seat = newEventSeat();
+        Reservation reservation = reservationService.reserveSeat(seat.getId(), UUID.randomUUID());
+
+        assertThatThrownBy(() -> reservationService.initiatePayment(reservation.getId(), UUID.randomUUID()))
+                .isInstanceOf(SeatUnavailableException.class);
+    }
+
+    @Test
+    void initiatePayment_isIdempotent_returnsSamePaymentOnRetry() {
         EventSeat seat = newEventSeat();
         UUID userId = UUID.randomUUID();
         Reservation reservation = reservationService.reserveSeat(seat.getId(), userId);
 
-        Ticket ticket = reservationService.confirmPurchase(reservation.getId(), userId);
+        Payment first = reservationService.initiatePayment(reservation.getId(), userId);
+        Payment second = reservationService.initiatePayment(reservation.getId(), userId);
 
-        assertThat(ticket.getTicketNumber()).isNotBlank();
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(paymentRepository.count()).isEqualTo(1);
+    }
+
+    /**
+     * جریان کامل ADR-0011 با FakePaymentProvider (پیش‌فرض تست): initiatePayment یک
+     * Payment واقعی می‌سازد؛ handleCallback (شبیه‌سازی بازگشت از درگاه) با Verify
+     * موفق، PaymentSucceededEvent منتشر می‌کند؛ TicketIssuanceListener گوش می‌دهد و
+     * بلیط را صادر می‌کند -- بدون این‌که ticketing مستقیم Provider را دیده باشد.
+     */
+    @Test
+    void payAndCallback_issuesTicket_viaPaymentSucceededEvent() {
+        EventSeat seat = newEventSeat();
+        UUID userId = UUID.randomUUID();
+        Reservation reservation = reservationService.reserveSeat(seat.getId(), userId);
+
+        Payment payment = reservationService.initiatePayment(reservation.getId(), userId);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.pending);
+        assertThat(payment.getRedirectUrl()).isNotBlank();
+
+        Payment afterCallback = paymentService.handleCallback(payment.getId());
+
+        assertThat(afterCallback.getStatus()).isEqualTo(PaymentStatus.paid);
         assertThat(eventSeatRepository.findById(seat.getId()).orElseThrow().getStatus()).isEqualTo(EventSeatStatus.sold);
         assertThat(reservationRepository.findById(reservation.getId())).isEmpty();
+        assertThat(ticketRepository.findByUserIdAndDeletedAtIsNull(userId)).hasSize(1);
     }
 
     @Test
-    void confirmPurchase_rejects_other_users_reservation() {
+    void handleCallback_isIdempotent_doesNotIssueDuplicateTicket() {
         EventSeat seat = newEventSeat();
-        Reservation reservation = reservationService.reserveSeat(seat.getId(), UUID.randomUUID());
+        UUID userId = UUID.randomUUID();
+        Reservation reservation = reservationService.reserveSeat(seat.getId(), userId);
+        Payment payment = reservationService.initiatePayment(reservation.getId(), userId);
 
-        assertThatThrownBy(() -> reservationService.confirmPurchase(reservation.getId(), UUID.randomUUID()))
-                .isInstanceOf(SeatUnavailableException.class);
+        paymentService.handleCallback(payment.getId());
+        paymentService.handleCallback(payment.getId()); // شبیه‌سازی بازگشت تکراری کاربر/درگاه
+
+        assertThat(ticketRepository.findByUserIdAndDeletedAtIsNull(userId)).hasSize(1);
     }
 
     /**

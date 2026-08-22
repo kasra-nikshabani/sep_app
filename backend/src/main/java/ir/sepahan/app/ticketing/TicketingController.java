@@ -16,22 +16,24 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
-/** مرور رویدادها و رزرو/لغو/تکمیل خرید صندلی -- برای هر کاربر احراز هویت‌شده (نقش fan/vip). */
+/** مرور رویدادها و رزرو/لغو/پرداخت صندلی -- برای هر کاربر احراز هویت‌شده (نقش fan/vip). */
 @RestController
 @RequestMapping("/api/v1/ticketing")
 public class TicketingController {
 
     private final EventRepository eventRepository;
     private final EventSeatRepository eventSeatRepository;
+    private final TicketRepository ticketRepository;
     private final ReservationService reservationService;
     private final UserProvisioningService userProvisioningService;
 
     public TicketingController(EventRepository eventRepository, EventSeatRepository eventSeatRepository,
-                                ReservationService reservationService, UserProvisioningService userProvisioningService) {
+                                TicketRepository ticketRepository, ReservationService reservationService,
+                                UserProvisioningService userProvisioningService) {
         this.eventRepository = eventRepository;
         this.eventSeatRepository = eventSeatRepository;
+        this.ticketRepository = ticketRepository;
         this.reservationService = reservationService;
         this.userProvisioningService = userProvisioningService;
     }
@@ -64,10 +66,17 @@ public class TicketingController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/reservations/{reservationId}/confirm")
-    public TicketResponse confirm(@PathVariable UUID reservationId, @AuthenticationPrincipal Jwt jwt) {
-        Ticket ticket = reservationService.confirmPurchase(reservationId, currentUserId(jwt));
-        return TicketResponse.of(ticket);
+    @PostMapping("/reservations/{reservationId}/pay")
+    public PayReservationResponse pay(@PathVariable UUID reservationId, @AuthenticationPrincipal Jwt jwt) {
+        var payment = reservationService.initiatePayment(reservationId, currentUserId(jwt));
+        return PayReservationResponse.of(payment);
+    }
+
+    @GetMapping("/tickets")
+    public List<TicketResponse> myTickets(@AuthenticationPrincipal Jwt jwt) {
+        return ticketRepository.findByUserIdAndDeletedAtIsNull(currentUserId(jwt)).stream()
+                .map(TicketResponse::of)
+                .toList();
     }
 
     private UUID currentUserId(Jwt jwt) {
