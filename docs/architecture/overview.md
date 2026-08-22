@@ -153,6 +153,7 @@ sepapp/
 | [0011](../adr/0011-payment-architecture.md) | معماری Payment: Zibal + Event-driven decoupling (Phase 9) |
 | [0012](../adr/0012-shop-module.md) | ماژول Shop: Inventory اتمی، Provider Interface برای Shipping، گردش‌کار Returns (Phase 10) |
 | [0013](../adr/0013-news-cms.md) | ماژول News/CMS: Media روی دیسک محلی، Revision کامل، انتشار زمان‌بندی‌شده (Phase 11) |
+| [0014](../adr/0014-loyalty-module.md) | ماژول Loyalty: سطح/امتیاز/جایزه‌ی Configurable، اتصال بلیط فوتبال با Polling از Django (Phase 12) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 
