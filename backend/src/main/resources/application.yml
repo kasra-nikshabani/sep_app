@@ -16,8 +16,21 @@ spring:
       ddl-auto: validate
 
   flyway:
-    schemas: public,users,fan,ticketing,payments,shop,news,loyalty
+    schemas: public,users,fan,ticketing,payments,shop,news,loyalty,notifications,partners
     default-schema: public
+
+  mail:
+    # فقط وقتی sepahan.notifications.email.provider=smtp باشد واقعاً استفاده می‌شود (ADR-0015)
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
   servlet:
     multipart:
@@ -71,6 +84,17 @@ sepahan:
       service-token: ${LOYALTY_DJANGO_SERVICE_TOKEN}
       poll-interval-ms: 300000 # هر ۵ دقیقه -- طبق تصمیم صریح کارفرما، Polling نه Webhook (ADR-0014)
       initial-lookback-days: 1 # اولین اجرا بعد از Deploy این ماژول -- فقط ۱ روز قبل، نه کل تاریخچه
+  notifications:
+    sms:
+      provider: fake # fake | sms_ir -- عمداً پیش‌فرض fake تا هیچ تماس شبکه‌ای/هزینه‌ی واقعی رخ ندهد
+      sms-ir:
+        base-url: https://api.sms.ir/v1
+        api-key: ${SMS_IR_API_KEY:}
+        line-number: ${SMS_IR_LINE_NUMBER:0}
+    email:
+      provider: fake # fake | smtp
+      smtp:
+        from: ${SMTP_FROM_ADDRESS:no-reply@sepahansc.com}
 
 resilience4j:
   circuitbreaker:
@@ -80,12 +104,22 @@ resilience4j:
         failure-rate-threshold: 50
         wait-duration-in-open-state: 15s
         permitted-number-of-calls-in-half-open-state: 3
+      sms_ir:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
   retry:
     instances:
       zibal:
         max-attempts: 3
         wait-duration: 500ms
+      sms_ir:
+        max-attempts: 3
+        wait-duration: 500ms
   timelimiter:
     instances:
       zibal:
+        timeout-duration: 8s
+      sms_ir:
         timeout-duration: 8s

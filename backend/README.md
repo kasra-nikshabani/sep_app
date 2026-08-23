@@ -1,6 +1,8 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 12). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 13). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+
+**نکته‌ی مهم درباره‌ی Phase 13:** طبق بریف، این فاز رسماً «External Integrations» (Banking/Vehicle/Insurance/Travel/Entertainment) بود و Notifications فاز جداگانه‌ی ۱۶ است. بررسی واقعی نشان داد هیچ‌کدام از Providerهای آن چهار حوزه (طبق بند ۸ بریف صراحتاً «مورد بررسی») در جایی از این پروژه استفاده نشده‌اند و ساختن حتی یک Interface خالی برایشان بدون API واقعی، خودش حدس‌زدن API بود؛ کارفرما این تصمیم را تأیید کرد و صریحاً خواست محتوای Phase 16 (که Providerهای واقعی SMS.ir/SMTP را دارد) به جای آن به این فاز منتقل شود، به‌همراه اسکلت Partners. جزئیات کامل در [ADR-0015](../docs/adr/0015-notifications-and-partners.md).
 
 اجرای کامل Phase 12 نیازمند یک متغیر محیطی اضافه است: `LOYALTY_DJANGO_SERVICE_TOKEN` (طبق `infra/.env.example`) -- راز مشترک بین این Backend و `ticket.sepahansc/football_tickets` برای Polling رویداد خرید بلیط فوتبال (ADR-0014). بدون آن، Backend بالا می‌آید ولی هر Poll با خطای احراز هویت از Django شکست می‌خورد (بدون اثر روی بقیه‌ی سیستم -- طبق طراحی Self-healing همان ADR).
 
@@ -26,6 +28,8 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - `/api/v1/shop/**` — کاتالوگ/سبد/Checkout/کد تخفیف/مرجوعی؛ کاهش اتمی موجودی زیر بار هم‌زمانی واقعی (۲۰ Thread روی آخرین واحد موجودی — دقیقاً یکی موفق می‌شود)، RBAC (`admin` برای کاتالوگ/گردش‌کار مرجوعی)، جریان کامل Checkout→پرداخت→`paid` از طریق همان رویداد Payment (ADR-0012).
 - `/api/v1/news/**` — کاتالوگ/برچسب/خبر/رسانه؛ RBAC (Draft فقط برای admin قابل مشاهده، ۴۰۴ برای fan)، آپلود واقعی تصویر روی دیسک محلی + سرو عمومی از `/media/**` (بدون Auth، چون `<img>` مرورگر Header نمی‌فرستد)، هر ویرایش یک Revision Snapshot می‌سازد، انتشار خودکار خبر زمان‌بندی‌شده با یک Job دوره‌ای (تأیید شده با یک خبر واقعی زمان‌بندی‌شده که بعد از رسیدن موعد خودکار published شد) (ADR-0013).
 - `/api/v1/loyalty/**` — حساب/امتیاز/سطح/جوایز؛ سطح/نرخ امتیازدهی کاملاً Configurable (بدون Restart قابل تغییر)، کاهش اتمی موجودی امتیاز/جایزه زیر بار هم‌زمانی واقعی (۲۰ Thread، دقیقاً یکی موفق می‌شود)، کسب امتیاز خودکار از رویداد Payment موجود (Shop/تئاتر) بدون هیچ تغییری در آن ماژول‌ها، و Polling دوره‌ای از یک Endpoint جدید در `ticket.sepahansc` برای امتیاز خرید بلیط فوتبال (تأیید زنده‌ی لایه‌ی Auth/Routing با درخواست واقعی HTTP؛ تست کامل زنجیره با دیتابیس واقعی Django به‌خاطر یک ناهماهنگی از قبل موجود در آن دیتابیس محلی ممکن نشد — جزئیات در ADR-0014) (ADR-0014).
+- `/api/v1/notifications/**` — ارسال دستی/آزمایشی SMS (`FakeSmsProvider` پیش‌فرض، `SmsIrProvider` واقعی طبق مستندات رسمی sms.ir آماده و پشت Flag)، Email (`FakeEmailProvider` پیش‌فرض، `SmtpEmailProvider` واقعی روی `spring-boot-starter-mail`)، و Push (فقط `FakePushProvider` -- بدون اپ موبایل هنوز)؛ هر تلاش (موفق/ناموفق) در دفترکل ثبت می‌شود؛ ثبت/لغو Device Token برای fan/vip. RBAC: ارسال/مشاهده‌ی دفترکل فقط admin.
+- `/api/v1/partners/**` — مدیریت رکورد Partner توسط admin (کلید API فقط یک‌بار، در لحظه‌ی ساخت، نمایش داده می‌شود)؛ `GET /api/v1/partners/me` تنها مسیری که خودِ Partner (با کلید خودش، بدون Keycloak) می‌بیند (ADR-0015).
 
 ## مرجع تصمیم‌ها
 
@@ -43,6 +47,8 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - مدل داده‌ی news: [docs/database/erd-news.md](../docs/database/erd-news.md)
 - ماژول Loyalty (سطح/امتیاز Configurable، Polling بلیط فوتبال از Django): [ADR-0014](../docs/adr/0014-loyalty-module.md)
 - مدل داده‌ی loyalty: [docs/database/erd-loyalty.md](../docs/database/erd-loyalty.md)
+- Notifications (SMS.ir/SMTP/Push-Fake) و اسکلت Partners: [ADR-0015](../docs/adr/0015-notifications-and-partners.md)
+- مدل داده‌ی notifications/partners: [docs/database/erd-notifications-and-partners.md](../docs/database/erd-notifications-and-partners.md)
 
 ## نقشه‌ی ماژول‌ها
 
@@ -58,8 +64,8 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 | `payments` | ماژول مرکزی پرداخت + Provider Interface | ✅ Phase 9 |
 | `wallet` | کیف‌پول Fan (جدا از Wallet داخلی Django) | — بدون فاز اختصاصی مشخص در بریف؛ فعلاً فقط `PaymentPurpose.wallet_topup` به‌عنوان Placeholder وجود دارد |
 | `loyalty` | امتیاز/سطح/جوایز، Configurable | ✅ Phase 12 |
-| `entertainment` / `insurance` / `vehicle` / `travel` | دامنه‌های Provider-محور | — Phase 13 |
-| `notifications` | SMS/Push/Email | — Phase 16 |
-| `partners` | مدیریت Partnerها | — Phase 13 |
-| `integrations` | Adapterهای همه‌ی Providerها + پل ارتباطی با Django | — Phase 13/7 |
+| `entertainment` / `insurance` / `vehicle` / `travel` | دامنه‌های Provider-محور | — کنارگذاشته‌شده در Phase 13 (بدون Provider واقعی تأییدشده -- طبق ADR-0015، حدس‌زدن API ممنوع است) |
+| `notifications` | SMS/Push/Email، Provider قابل تعویض | ✅ Phase 13 (جایگزین برنامه‌ریزی اولیه‌ی Phase 16 -- ADR-0015) |
+| `partners` | مدیریت Partnerها | ✅ Phase 13 (فقط اسکلت ساختاری -- طراحی API واقعی هر Partner موضوع فاز خودش) |
+| `integrations` | Adapterهای همه‌ی Providerها + پل ارتباطی با Django | — منتظر تصمیم روی یک Provider واقعی برای هرکدام از حوزه‌های کنارگذاشته‌شده |
 | `audit` | لاگ ممیزی | — |

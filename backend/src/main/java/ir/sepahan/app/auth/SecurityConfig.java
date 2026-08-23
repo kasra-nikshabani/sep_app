@@ -34,6 +34,9 @@ public class SecurityConfig {
                         // مرورگر برای <img src> هرگز Authorization Header نمی‌فرستد؛ محتوا هم صرفاً
                         // فایل رسانه‌ی عمومی است، نه داده‌ی حساس (ADR-0013)
                         .requestMatchers("/media/**").permitAll()
+                        // یک Partner خارجی کاربر Fan ID نیست -- با کلید API خودش احراز هویت می‌شود، نه
+                        // Keycloak؛ تأیید دستی داخل PartnerSelfController انجام می‌شود (ADR-0015)
+                        .requestMatchers("/api/v1/partners/me").permitAll()
                         // بدون این خط، وقتی یک Controller اجازه‌دار (بالا) خطایی پرتاب کند (مثلاً 404)،
                         // Forward داخلی Tomcat به /error دوباره از این زنجیره‌ی امنیتی رد می‌شود و چون
                         // /error مجاز نیست، پاسخ واقعی (404) با یک 401 گمراه‌کننده جایگزین می‌شود --
