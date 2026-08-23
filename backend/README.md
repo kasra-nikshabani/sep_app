@@ -1,6 +1,8 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 14). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 15). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+
+**نکته‌ی Phase 15:** بدون Endpoint جدید -- فقط دو تغییر واقعی روی کد موجود. (۱) افزودن CORS محدود (فقط `/api/v1/**`، فقط Originهای صراحتاً پیکربندی‌شده) چون اپ موبایل (`mobile/`، برخلاف Admin Panel) مستقیم از مرورگر/Client به این API وصل می‌شود، نه از پشت یک لایه‌ی سروری میانی. (۲) رفع یک باگ واقعی Race Condition در JIT Provisioning: `UserProvisioningService` و `LoyaltyAccountService` از `save()` به `saveAndFlush()` تغییر کردند، چون `save()` ساده Insert را تا Commit تراکنش به تعویق می‌انداخت و `DataIntegrityViolationException` بیرون از try/catch پرتاب می‌شد -- اولین‌بار با درخواست‌های واقعاً هم‌زمان اپ موبایل در اولین ورود یک کاربر رخ داد. جزئیات کامل در [ADR-0017](../docs/adr/0017-mobile-app.md).
 
 **نکته‌ی Phase 14:** فقط دو Endpoint Read-only کوچک جدید اضافه شد -- `GET /api/v1/users/admin` و `GET /api/v1/payments/admin` -- تا Admin Panel جدید (`admin-panel/`) بتواند فهرست کاربران/پرداخت‌ها را نشان دهد. کار اصلی این فاز در `admin-panel/` است؛ جزئیات در [ADR-0016](../docs/adr/0016-admin-panel.md).
 
@@ -53,6 +55,7 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - Notifications (SMS.ir/SMTP/Push-Fake) و اسکلت Partners: [ADR-0015](../docs/adr/0015-notifications-and-partners.md)
 - مدل داده‌ی notifications/partners: [docs/database/erd-notifications-and-partners.md](../docs/database/erd-notifications-and-partners.md)
 - Admin Panel (Next.js 16 + Auth.js/Keycloak BFF + Ant Design): [ADR-0016](../docs/adr/0016-admin-panel.md)
+- اپ موبایل (Expo + expo-auth-session/Keycloak PKCE، CORS برای فراخوانی مستقیم، رفع باگ Race در JIT Provisioning): [ADR-0017](../docs/adr/0017-mobile-app.md)
 
 ## نقشه‌ی ماژول‌ها
 

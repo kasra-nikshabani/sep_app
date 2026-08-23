@@ -156,6 +156,7 @@ sepapp/
 | [0014](../adr/0014-loyalty-module.md) | ماژول Loyalty: سطح/امتیاز/جایزه‌ی Configurable، اتصال بلیط فوتبال با Polling از Django (Phase 12) |
 | [0015](../adr/0015-notifications-and-partners.md) | Notifications (SMS.ir/SMTP/Push-Fake) و اسکلت Partners؛ Banking/Vehicle/Insurance/Travel/Entertainment کنار گذاشته شدند (Phase 13) |
 | [0016](../adr/0016-admin-panel.md) | Admin Panel: Next.js 16 + Auth.js/Keycloak (BFF) + Ant Design؛ فقط بخش‌های دارای Backend واقعی (Phase 14) |
+| [0017](../adr/0017-mobile-app.md) | اپ موبایل: Expo + expo-auth-session/Keycloak (PKCE، Client عمومی)؛ Wallet/Services/Matches «به‌زودی» صادقانه؛ رفع باگ واقعی Race در JIT Provisioning (Phase 15) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

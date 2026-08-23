@@ -42,13 +42,20 @@ public class UserProvisioningService {
      * دو درخواست هم‌زمان اولین ورود یک کاربر کاملاً جدید ممکن است هر دو findBy...IsNull را خالی ببینند
      * و هر دو تلاش کنند رکورد بسازند؛ Unique Index دیتابیس (نه این کد) مانع تکرار می‌شود — این‌جا فقط
      * آن خطای دیتابیسی را می‌گیریم و به‌جای شکست، رکوردی که درخواست موازی ساخته را برمی‌گردانیم.
+     *
+     * saveAndFlush عمداً به‌جای save: JPA معمولاً INSERT را تا لحظه‌ی Commit
+     * تراکنش به تعویق می‌اندازد -- یعنی DataIntegrityViolationException بدون
+     * Flush صریح بعد از خروج از همین متد (بیرون try/catch) پرتاب می‌شد و اصلاً
+     * گرفته نمی‌شد (کشف واقعی در Phase 15: دو تماس هم‌زمان اولین ورود اپ
+     * موبایل -- /users/me و /loyalty/account -- دقیقاً همین بار مسابقه را
+     * برای اولین بار به‌طور واقعی رخ داد).
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected AppUser createUserSafely(Jwt jwt, UUID keycloakSubject) {
         try {
             String nationalCode = jwt.getClaimAsString("national_code");
             String phoneNumber = jwt.getClaimAsString("phone_number");
-            return appUserRepository.save(new AppUser(keycloakSubject, nationalCode, phoneNumber));
+            return appUserRepository.saveAndFlush(new AppUser(keycloakSubject, nationalCode, phoneNumber));
         } catch (DataIntegrityViolationException raceLost) {
             return appUserRepository.findByKeycloakSubjectAndDeletedAtIsNull(keycloakSubject)
                     .orElseThrow(() -> raceLost);
@@ -58,7 +65,7 @@ public class UserProvisioningService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected FanProfile createFanProfileSafely(UUID userId) {
         try {
-            return fanProfileRepository.save(new FanProfile(userId));
+            return fanProfileRepository.saveAndFlush(new FanProfile(userId));
         } catch (DataIntegrityViolationException raceLost) {
             return fanProfileRepository.findByUserIdAndDeletedAtIsNull(userId)
                     .orElseThrow(() -> raceLost);

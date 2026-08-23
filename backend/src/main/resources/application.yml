@@ -70,6 +70,12 @@ management:
 # فایل YAML باعث می‌شود پارسر (SnakeYAML) دومی را جایگزین اولی کند، نه Merge (یک
 # باگ واقعی که در Phase 10، قبل از اجرا، در ویرایش همین فایل پیش آمد).
 sepahan:
+  cors:
+    # طبق کشف Phase 15: برخلاف Admin Panel (الگوی BFF -- مرورگر هرگز مستقیم
+    # این API را صدا نمی‌زند)، اپ موبایل خودش مستقیماً با Bearer Token تماس
+    # می‌گیرد؛ نسخه‌ی Web آن (فقط برای Preview/تست در این پروژه، طبق
+    # docs/adr/0017-mobile-app.md) یک مرورگر واقعی است و CORS لازم دارد.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:8082,http://localhost:19006}
   payments:
     provider: fake # fake | zibal -- عمداً پیش‌فرض fake تا هیچ تماس شبکه‌ای ناخواسته‌ای رخ ندهد
     callback-base-url: http://localhost:${server.port}

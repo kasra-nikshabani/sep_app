@@ -40,10 +40,16 @@ public class LoyaltyAccountService {
         return accountRepository.findByUserId(userId).orElseGet(() -> createAccountSafely(userId));
     }
 
+    /**
+     * saveAndFlush عمداً به‌جای save: بدون Flush صریح، DataIntegrityViolationException
+     * فقط در لحظه‌ی Commit تراکنش (بیرون این متد، بیرون try/catch) پرتاب می‌شد
+     * و اصلاً گرفته نمی‌شد -- دقیقاً همان باگ کشف‌شده در UserProvisioningService
+     * حین همین فاز (دو تماس هم‌زمان اولین ورود اپ موبایل).
+     */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     protected LoyaltyAccount createAccountSafely(UUID userId) {
         try {
-            return accountRepository.save(new LoyaltyAccount(userId));
+            return accountRepository.saveAndFlush(new LoyaltyAccount(userId));
         } catch (DataIntegrityViolationException raceLost) {
             return accountRepository.findByUserId(userId).orElseThrow(() -> raceLost);
         }
@@ -111,7 +117,7 @@ public class LoyaltyAccountService {
                                                                  int points, String sourceType, UUID sourceReferenceId,
                                                                  String description) {
         try {
-            return Optional.of(transactionRepository.save(
+            return Optional.of(transactionRepository.saveAndFlush(
                     new LoyaltyTransaction(account, type, points, sourceType, sourceReferenceId, description)));
         } catch (DataIntegrityViolationException raceLost) {
             return Optional.empty();
