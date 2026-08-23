@@ -57,6 +57,13 @@ management:
   endpoint:
     health:
       show-details: never
+  health:
+    # پیش‌فرض Email این پروژه fake است (بدون SMTP واقعی) -- Health خود برنامه
+    # نباید به در دسترس‌بودن یک SMTP واقعی که عمداً استفاده نمی‌شود وابسته باشد
+    # (کشف‌شده در Phase 14: Actuator با spring-boot-starter-mail به‌صورت خودکار
+    # این Health Indicator را فعال می‌کند).
+    mail:
+      enabled: false
 
 # ---- Payment (ADR-0011) / Shop (ADR-0012) / News (ADR-0013) ----
 # نکته: همه‌ی این‌ها زیر یک کلید ریشه‌ی sepahan هستند -- دو بلوک sepahan جدا در یک

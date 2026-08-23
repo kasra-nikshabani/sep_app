@@ -1,6 +1,8 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 13). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 14). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+
+**نکته‌ی Phase 14:** فقط دو Endpoint Read-only کوچک جدید اضافه شد -- `GET /api/v1/users/admin` و `GET /api/v1/payments/admin` -- تا Admin Panel جدید (`admin-panel/`) بتواند فهرست کاربران/پرداخت‌ها را نشان دهد. کار اصلی این فاز در `admin-panel/` است؛ جزئیات در [ADR-0016](../docs/adr/0016-admin-panel.md).
 
 **نکته‌ی مهم درباره‌ی Phase 13:** طبق بریف، این فاز رسماً «External Integrations» (Banking/Vehicle/Insurance/Travel/Entertainment) بود و Notifications فاز جداگانه‌ی ۱۶ است. بررسی واقعی نشان داد هیچ‌کدام از Providerهای آن چهار حوزه (طبق بند ۸ بریف صراحتاً «مورد بررسی») در جایی از این پروژه استفاده نشده‌اند و ساختن حتی یک Interface خالی برایشان بدون API واقعی، خودش حدس‌زدن API بود؛ کارفرما این تصمیم را تأیید کرد و صریحاً خواست محتوای Phase 16 (که Providerهای واقعی SMS.ir/SMTP را دارد) به جای آن به این فاز منتقل شود، به‌همراه اسکلت Partners. جزئیات کامل در [ADR-0015](../docs/adr/0015-notifications-and-partners.md).
 
@@ -30,6 +32,7 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - `/api/v1/loyalty/**` — حساب/امتیاز/سطح/جوایز؛ سطح/نرخ امتیازدهی کاملاً Configurable (بدون Restart قابل تغییر)، کاهش اتمی موجودی امتیاز/جایزه زیر بار هم‌زمانی واقعی (۲۰ Thread، دقیقاً یکی موفق می‌شود)، کسب امتیاز خودکار از رویداد Payment موجود (Shop/تئاتر) بدون هیچ تغییری در آن ماژول‌ها، و Polling دوره‌ای از یک Endpoint جدید در `ticket.sepahansc` برای امتیاز خرید بلیط فوتبال (تأیید زنده‌ی لایه‌ی Auth/Routing با درخواست واقعی HTTP؛ تست کامل زنجیره با دیتابیس واقعی Django به‌خاطر یک ناهماهنگی از قبل موجود در آن دیتابیس محلی ممکن نشد — جزئیات در ADR-0014) (ADR-0014).
 - `/api/v1/notifications/**` — ارسال دستی/آزمایشی SMS (`FakeSmsProvider` پیش‌فرض، `SmsIrProvider` واقعی طبق مستندات رسمی sms.ir آماده و پشت Flag)، Email (`FakeEmailProvider` پیش‌فرض، `SmtpEmailProvider` واقعی روی `spring-boot-starter-mail`)، و Push (فقط `FakePushProvider` -- بدون اپ موبایل هنوز)؛ هر تلاش (موفق/ناموفق) در دفترکل ثبت می‌شود؛ ثبت/لغو Device Token برای fan/vip. RBAC: ارسال/مشاهده‌ی دفترکل فقط admin.
 - `/api/v1/partners/**` — مدیریت رکورد Partner توسط admin (کلید API فقط یک‌بار، در لحظه‌ی ساخت، نمایش داده می‌شود)؛ `GET /api/v1/partners/me` تنها مسیری که خودِ Partner (با کلید خودش، بدون Keycloak) می‌بیند (ADR-0015).
+- `GET /api/v1/users/admin` و `GET /api/v1/payments/admin` — فهرست Read-only (فقط admin) برای Admin Panel؛ بدون منطق جدید، فقط نگاشت به DTO (ADR-0016).
 
 ## مرجع تصمیم‌ها
 
@@ -49,19 +52,20 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - مدل داده‌ی loyalty: [docs/database/erd-loyalty.md](../docs/database/erd-loyalty.md)
 - Notifications (SMS.ir/SMTP/Push-Fake) و اسکلت Partners: [ADR-0015](../docs/adr/0015-notifications-and-partners.md)
 - مدل داده‌ی notifications/partners: [docs/database/erd-notifications-and-partners.md](../docs/database/erd-notifications-and-partners.md)
+- Admin Panel (Next.js 16 + Auth.js/Keycloak BFF + Ant Design): [ADR-0016](../docs/adr/0016-admin-panel.md)
 
 ## نقشه‌ی ماژول‌ها
 
 | ماژول | مسئولیت خلاصه | وضعیت |
 |---|---|---|
 | `auth` | اعتبارسنجی توکن Keycloak، نگاشت نقش‌ها | ✅ Phase 6 |
-| `users` | پروفایل کاربر (آینه‌ی Keycloak Subject) | ✅ Phase 6 |
+| `users` | پروفایل کاربر (آینه‌ی Keycloak Subject) | ✅ Phase 6 (+ فهرست Admin، Phase 14) |
 | `fan` | Fan ID، کارت عضویت | ✅ Phase 6 (`fan_profile`)؛ `membership_card` فقط در Migration، بدون Entity/Service (منطق صدور هنوز تصمیم‌گیری نشده) |
 | `news` | CMS اخبار | ✅ Phase 11 |
 | `sports` / `matches` | محتوای ورزشی + متادیتای نمایشی فوتبال (بدون صندلی/بلیط — آن در Django است) | — |
 | `ticketing` | موتور عمومی Venue/Event/Seat — فعلاً فقط برای **تئاتر** ([ADR-0006](../docs/adr/0006-inhouse-theater-ticketing.md)) | ✅ Phase 8 (Reservation)، ✅ Phase 9 (پرداخت واقعی و صدور بلیط از طریق `payments`، جایگزین مسیر ساده‌شده) |
 | `shop` / `products` / `cart` / `orders` | فروشگاه اینترنتی (بازسازی کامل) | ✅ Phase 10 |
-| `payments` | ماژول مرکزی پرداخت + Provider Interface | ✅ Phase 9 |
+| `payments` | ماژول مرکزی پرداخت + Provider Interface | ✅ Phase 9 (+ فهرست Admin، Phase 14) |
 | `wallet` | کیف‌پول Fan (جدا از Wallet داخلی Django) | — بدون فاز اختصاصی مشخص در بریف؛ فعلاً فقط `PaymentPurpose.wallet_topup` به‌عنوان Placeholder وجود دارد |
 | `loyalty` | امتیاز/سطح/جوایز، Configurable | ✅ Phase 12 |
 | `entertainment` / `insurance` / `vehicle` / `travel` | دامنه‌های Provider-محور | — کنارگذاشته‌شده در Phase 13 (بدون Provider واقعی تأییدشده -- طبق ADR-0015، حدس‌زدن API ممنوع است) |
