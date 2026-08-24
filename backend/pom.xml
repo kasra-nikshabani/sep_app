@@ -71,6 +71,14 @@
         </dependency>
 
         <dependency>
+            <!-- کانال Push واقعی در ماژول Notifications (Phase 16، ADR-0018): SDK رسمی Google برای
+                 FCM HTTP v1 (OAuth2 از روی Service Account، بدون نیاز به پیاده‌سازی دستی امضای JWT) -->
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>9.10.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>

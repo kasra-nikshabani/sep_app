@@ -28,7 +28,8 @@
       "expo-web-browser",
       "expo-secure-store",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-notifications"
     ]
   }
 }

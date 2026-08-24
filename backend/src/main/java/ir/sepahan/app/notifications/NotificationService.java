@@ -43,22 +43,52 @@ public class NotificationService {
                 () -> pushProvider.send(deviceToken, title, body));
     }
 
-    /** ارسال به همه‌ی دستگاه‌های فعال کاربر -- اگر کاربر هیچ دستگاه ثبت‌شده‌ای نداشته باشد، فهرست خالی برمی‌گردد. */
+    /**
+     * ارسال به همه‌ی دستگاه‌های فعال کاربر -- اگر کاربر هیچ دستگاه ثبت‌شده‌ای نداشته باشد، فهرست
+     * خالی برمی‌گردد. برخلاف {@link #sendPush}، این متد مستقیم {@link DeviceToken} را در اختیار دارد
+     * پس می‌تواند {@link DeviceTokenUnregisteredException} را جدا تشخیص دهد و آن رکورد را غیرفعال
+     * کند -- بدون این کار، تلاش‌های بعدی دوباره به همان Token مرده (اپ حذف‌شده) ارسال می‌شدند (ADR-0018).
+     */
     public List<NotificationLog> sendPushToUser(UUID userId, String title, String body) {
         return deviceTokenRepository.findByUserIdAndActiveTrueAndDeletedAtIsNull(userId).stream()
-                .map(deviceToken -> sendPush(deviceToken.getToken(), title, body))
+                .map(deviceToken -> sendPushToDevice(deviceToken, title, body))
                 .toList();
     }
 
+    private NotificationLog sendPushToDevice(DeviceToken deviceToken, String title, String body) {
+        try {
+            pushProvider.send(deviceToken.getToken(), title, body);
+            return saveLog(NotificationChannel.push, deviceToken.getToken(), title, body,
+                    NotificationStatus.sent, pushProvider.name(), null);
+        } catch (DeviceTokenUnregisteredException e) {
+            deviceToken.setActive(false);
+            deviceTokenRepository.save(deviceToken);
+            return saveLog(NotificationChannel.push, deviceToken.getToken(), title, body,
+                    NotificationStatus.failed, pushProvider.name(), e.getMessage());
+        } catch (NotificationProviderException e) {
+            return saveLog(NotificationChannel.push, deviceToken.getToken(), title, body,
+                    NotificationStatus.failed, pushProvider.name(), e.getMessage());
+        }
+    }
+
+    /**
+     * {@code attempt} عمداً هیچ Exception ای را هرگز به فراخوانی‌کننده پرتاب نمی‌کند (Best-effort،
+     * طبق Javadoc کلاس) -- این ثبات برای sendSms/sendEmail/sendPush تک‌توکنی حفظ می‌شود؛ فقط
+     * {@link #sendPushToDevice} (که مستقیم به DeviceToken دسترسی دارد) جدا از این مسیر مشترک،
+     * خودش خطای Provider را می‌گیرد تا در صورت لزوم رکورد را غیرفعال کند.
+     */
     private NotificationLog attempt(NotificationChannel channel, String recipient, String subject, String content,
                                      String providerName, Runnable action) {
-        NotificationLog log;
         try {
             action.run();
-            log = new NotificationLog(channel, recipient, subject, content, NotificationStatus.sent, providerName, null);
+            return saveLog(channel, recipient, subject, content, NotificationStatus.sent, providerName, null);
         } catch (NotificationProviderException e) {
-            log = new NotificationLog(channel, recipient, subject, content, NotificationStatus.failed, providerName, e.getMessage());
+            return saveLog(channel, recipient, subject, content, NotificationStatus.failed, providerName, e.getMessage());
         }
-        return logRepository.save(log);
+    }
+
+    private NotificationLog saveLog(NotificationChannel channel, String recipient, String subject, String content,
+                                     NotificationStatus status, String providerName, String errorMessage) {
+        return logRepository.save(new NotificationLog(channel, recipient, subject, content, status, providerName, errorMessage));
     }
 }

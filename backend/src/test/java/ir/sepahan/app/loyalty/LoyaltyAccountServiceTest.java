@@ -4,12 +4,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -170,13 +174,67 @@ class LoyaltyAccountServiceTest {
     }
 
     /**
+     * دقیقاً همان بار مسابقه‌ای که در UserProvisioningServiceTest برای JIT کاربر تست شد -- این‌جا
+     * برای JIT حساب وفاداری (ADR-0018): چند فراخوانی هم‌زمان {@code getOrCreateAccount} برای همان
+     * userId. تعداد Thread عمداً محدود (نه ده‌ها) چون هر Thread حین این متد تا دو Connection
+     * هم‌زمان لازم دارد (یکی Transaction فراخوان، یکی LoyaltyJitInsertHelper.insertAccount با
+     * REQUIRES_NEW واقعی)؛ عدد بیشتر خودِ تست را به Timeout پول پیش‌فرض HikariCP می‌رساند، نه کد
+     * Production را.
+     */
+    @Test
+    void getOrCreateAccount_concurrentFirstAccess_allCallsSucceedWithSameAccount() throws InterruptedException {
+        UUID userId = UUID.randomUUID();
+        int attempts = 4;
+        ExecutorService pool = Executors.newFixedThreadPool(attempts);
+        CountDownLatch startLine = new CountDownLatch(1);
+        CountDownLatch finishLine = new CountDownLatch(attempts);
+        List<LoyaltyAccount> results = new CopyOnWriteArrayList<>();
+        List<Throwable> failures = new CopyOnWriteArrayList<>();
+
+        for (int i = 0; i < attempts; i++) {
+            pool.submit(() -> {
+                try {
+                    startLine.await();
+                    results.add(loyaltyAccountService.getOrCreateAccount(userId));
+                } catch (Throwable t) {
+                    failures.add(t);
+                } finally {
+                    finishLine.countDown();
+                }
+            });
+        }
+
+        startLine.countDown();
+        boolean finished = finishLine.await(30, TimeUnit.SECONDS);
+        pool.shutdown();
+
+        assertThat(finished).isTrue();
+        assertThat(failures).as("هیچ فراخوانی نباید Exception پرتاب کند -- دقیقاً همان نقصی که در Phase 16 کشف و رفع شد").isEmpty();
+        Set<UUID> distinctAccountIds = results.stream().map(LoyaltyAccount::getId).collect(Collectors.toSet());
+        assertThat(distinctAccountIds).as("همه باید دقیقاً همان رکورد برنده‌ی مسابقه را برگردانند").hasSize(1);
+    }
+
+    /**
      * هسته‌ی اصلی ADR-0014 برای جوایز: ده‌ها مبادله‌ی واقعاً هم‌زمان روی آخرین واحد
      * موجودی یک جایزه -- باید فقط یکی موفق شود (هم‌الگوی تست هم‌زمانی موجودی Shop، Phase 10).
+     *
+     * <p>ساخت حساب/بذر امتیاز عمداً *قبل* از خط شروع هم‌زمانی انجام می‌شود -- چون خودِ
+     * {@code adjustPointsManually} (از طریق getOrCreateAccount) از REQUIRES_NEW واقعی استفاده
+     * می‌کند (ADR-0018) و به یک Connection دوم نیاز دارد؛ چیزی که این تست واقعاً می‌سنجد رقابت
+     * روی آخرین واحد موجودی جایزه است، نه ساخت هم‌زمان حساب -- بار Connection غیرمرتبط با هدف
+     * تست را از پنجره‌ی زمان‌بندی‌شده‌ی هم‌زمانی حذف می‌کند.
      */
     @Test
     void concurrentRedemptions_onLastUnitOfStock_onlyOneSucceeds() throws InterruptedException {
         LoyaltyReward reward = rewardRepository.save(new LoyaltyReward("جایزه‌ی کمیاب", null, 10, 1));
         int attempts = 20;
+        List<UUID> userIds = new java.util.ArrayList<>();
+        for (int i = 0; i < attempts; i++) {
+            UUID userId = UUID.randomUUID();
+            loyaltyAccountService.adjustPointsManually(userId, UUID.randomUUID(), 100, "بذر تست");
+            userIds.add(userId);
+        }
+
         ExecutorService pool = Executors.newFixedThreadPool(attempts);
         CountDownLatch startLine = new CountDownLatch(1);
         CountDownLatch finishLine = new CountDownLatch(attempts);
@@ -184,11 +242,10 @@ class LoyaltyAccountServiceTest {
         AtomicInteger rejected = new AtomicInteger();
 
         for (int i = 0; i < attempts; i++) {
+            UUID userId = userIds.get(i);
             pool.submit(() -> {
-                UUID userId = UUID.randomUUID();
                 try {
                     startLine.await();
-                    loyaltyAccountService.adjustPointsManually(userId, UUID.randomUUID(), 100, "بذر تست");
                     rewardService.redeem(userId, reward.getId());
                     succeeded.incrementAndGet();
                 } catch (RuntimeException expected) {

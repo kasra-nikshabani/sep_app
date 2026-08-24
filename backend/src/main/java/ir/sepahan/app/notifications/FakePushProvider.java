@@ -2,14 +2,16 @@ package ir.sepahan.app.notifications;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * تنها پیاده‌سازی فعلی -- بدون اپ موبایل واقعی (Phase 15) و بدون تصمیم روی
- * FCM/APNs، اتصال Push واقعی این فاز حدس‌زدن یک API بود؛ طبق تصمیم صریح کارفرما
- * کنار گذاشته شد (ADR-0015). ثبت/لغو Device Token همچنان واقعی است.
+ * پیش‌فرض در همه‌ی محیط‌ها مگر تغییر صریح تنظیمات -- هم‌الگوی FakeSmsProvider/FakeEmailProvider.
+ * تا Phase 15 (بدون اپ موبایل واقعی) تنها پیاده‌سازی ممکن بود؛ از Phase 16 به بعد
+ * {@link FirebaseCloudMessagingPushProvider} پیاده‌سازی واقعی است (ADR-0018).
  */
 @Component
+@ConditionalOnProperty(name = "sepahan.notifications.push.provider", havingValue = "fake", matchIfMissing = true)
 public class FakePushProvider implements PushProvider {
 
     private static final Logger log = LoggerFactory.getLogger(FakePushProvider.class);

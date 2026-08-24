@@ -7,16 +7,16 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
  * منطق کسب/خرج امتیاز و محاسبه‌ی سطح. طبق بند ۱۶ بریف، نرخ امتیازدهی از
  * {@link PointsEarningRule} (Configurable) خوانده می‌شود، نه یک عدد Hardcode.
  *
- * Idempotency رویدادهای earn دقیقاً هم‌الگوی UserProvisioningService (JIT، Phase 5) است:
- * تلاش برای Insert در یک Transaction جدا (REQUIRES_NEW)، و اگر Unique Index دیتابیس
- * (نه این کد) رد کرد، رکورد موجود را برمی‌گردانیم -- نه خطا.
+ * <p>Idempotency رویدادهای earn دقیقاً هم‌الگوی UserProvisioningService (JIT، Phase 5) است: تلاش
+ * برای Insert در یک Transaction جدا (REQUIRES_NEW، در {@link LoyaltyJitInsertHelper} -- یک Bean
+ * جدا، نه متد همین کلاس؛ دلیل در Javadoc همان کلاس)، و اگر Unique Index دیتابیس (نه این کد) رد
+ * کرد، رکورد موجود را برمی‌گردانیم -- نه خطا.
  */
 @Service
 public class LoyaltyAccountService {
@@ -25,34 +25,29 @@ public class LoyaltyAccountService {
     private final LoyaltyTransactionRepository transactionRepository;
     private final PointsEarningRuleRepository earningRuleRepository;
     private final LoyaltyLevelRepository levelRepository;
+    private final LoyaltyJitInsertHelper jitInsertHelper;
 
     public LoyaltyAccountService(LoyaltyAccountRepository accountRepository,
                                   LoyaltyTransactionRepository transactionRepository,
                                   PointsEarningRuleRepository earningRuleRepository,
-                                  LoyaltyLevelRepository levelRepository) {
+                                  LoyaltyLevelRepository levelRepository,
+                                  LoyaltyJitInsertHelper jitInsertHelper) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.earningRuleRepository = earningRuleRepository;
         this.levelRepository = levelRepository;
+        this.jitInsertHelper = jitInsertHelper;
     }
 
     public LoyaltyAccount getOrCreateAccount(UUID userId) {
-        return accountRepository.findByUserId(userId).orElseGet(() -> createAccountSafely(userId));
-    }
-
-    /**
-     * saveAndFlush عمداً به‌جای save: بدون Flush صریح، DataIntegrityViolationException
-     * فقط در لحظه‌ی Commit تراکنش (بیرون این متد، بیرون try/catch) پرتاب می‌شد
-     * و اصلاً گرفته نمی‌شد -- دقیقاً همان باگ کشف‌شده در UserProvisioningService
-     * حین همین فاز (دو تماس هم‌زمان اولین ورود اپ موبایل).
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected LoyaltyAccount createAccountSafely(UUID userId) {
-        try {
-            return accountRepository.saveAndFlush(new LoyaltyAccount(userId));
-        } catch (DataIntegrityViolationException raceLost) {
-            return accountRepository.findByUserId(userId).orElseThrow(() -> raceLost);
-        }
+        return accountRepository.findByUserId(userId)
+                .orElseGet(() -> {
+                    try {
+                        return jitInsertHelper.insertAccount(userId);
+                    } catch (DataIntegrityViolationException raceLost) {
+                        return accountRepository.findByUserId(userId).orElseThrow(() -> raceLost);
+                    }
+                });
     }
 
     /**
@@ -79,16 +74,18 @@ public class LoyaltyAccountService {
         }
 
         LoyaltyAccount account = getOrCreateAccount(userId);
-        Optional<LoyaltyTransaction> inserted = tryInsertTransaction(account, LoyaltyTransactionType.earn, points,
-                sourceType.name(), sourceReferenceId, "کسب امتیاز از " + sourceType);
-        if (inserted.isEmpty()) {
+        LoyaltyTransaction inserted;
+        try {
+            inserted = jitInsertHelper.insertTransaction(account, LoyaltyTransactionType.earn, points,
+                    sourceType.name(), sourceReferenceId, "کسب امتیاز از " + sourceType);
+        } catch (DataIntegrityViolationException raceLost) {
             // رقابت هم‌زمان روی همین رویداد -- تلاش دیگری قبلاً موفق شده؛ هیچ افزایش دوباره‌ای اعمال نمی‌شود
             return transactionRepository.findBySourceTypeAndSourceReferenceId(sourceType.name(), sourceReferenceId).orElse(null);
         }
 
         accountRepository.incrementEarnedPoints(account.getId(), points);
         recomputeLevel(account.getId());
-        return inserted.get();
+        return inserted;
     }
 
     /** {@code delta} مثبت مثل earn رفتار می‌کند (lifetimePoints هم زیاد می‌شود)؛ منفی فقط از balance کم می‌شود. */
@@ -110,18 +107,6 @@ public class LoyaltyAccountService {
         LoyaltyTransaction txn = new LoyaltyTransaction(account, LoyaltyTransactionType.adjust, delta, null, null, reason);
         txn.setCreatedBy(adminId);
         return transactionRepository.save(txn);
-    }
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    protected Optional<LoyaltyTransaction> tryInsertTransaction(LoyaltyAccount account, LoyaltyTransactionType type,
-                                                                 int points, String sourceType, UUID sourceReferenceId,
-                                                                 String description) {
-        try {
-            return Optional.of(transactionRepository.saveAndFlush(
-                    new LoyaltyTransaction(account, type, points, sourceType, sourceReferenceId, description)));
-        } catch (DataIntegrityViolationException raceLost) {
-            return Optional.empty();
-        }
     }
 
     /**

@@ -1,6 +1,6 @@
 # اپ موبایل — Expo + TypeScript
 
-**وضعیت:** قابل‌اجرا (Phase 15، فقط نسخه‌ی Web تأیید شده — بدون Emulator/دستگاه واقعی در این محیط). Expo SDK 57 + Expo Router + expo-auth-session (Keycloak PKCE) — [ADR-0017](../docs/adr/0017-mobile-app.md).
+**وضعیت:** قابل‌اجرا (Phase 16، فقط نسخه‌ی Web تأیید شده — بدون Emulator/دستگاه واقعی در این محیط). Expo SDK 57 + Expo Router + expo-auth-session (Keycloak PKCE) — [ADR-0017](../docs/adr/0017-mobile-app.md) / [ADR-0018](../docs/adr/0018-real-push-notifications.md).
 
 ## اجرا (محلی، در برابر Backend + Keycloak زنده)
 
@@ -28,6 +28,7 @@ npm run web -- --port 8082
 - احراز هویت: Authorization Code Flow + PKCE با Keycloak، مستقیم در Client (بدون لایه‌ی سروری میانی، برخلاف Admin Panel) — [ADR-0003](../docs/adr/0003-keycloak-central-sso-fan-id.md) / [ADR-0017](../docs/adr/0017-mobile-app.md)
 - معماری کلی این فاز (محدوده، دو باگ Redirect/Discovery در PKCE روی Web، افزودن CORS به Backend، رفع باگ Race در JIT Provisioning): [ADR-0017](../docs/adr/0017-mobile-app.md)
 - بلیط فوتبال (Matches): جریان خرید در Django کاملاً HTML/Session-محور است، نه JSON API — بدون Endpoint جدید یا حدس API، فعلاً «به‌زودی» — رجوع به [ADR-0017](../docs/adr/0017-mobile-app.md)
+- Push واقعی (FCM مستقیم، نه Expo Push Service) و ثبت Token واقعی دستگاه: [ADR-0018](../docs/adr/0018-real-push-notifications.md)
 
 ## بخش‌های پیاده‌سازی‌شده (طبق بند ۱۹ بریف)
 
@@ -39,7 +40,7 @@ npm run web -- --port 8082
 | Shop | ✅ کامل (کاتالوگ/سبد/Checkout/پرداخت/سفارش‌ها) |
 | Tickets | ✅ فقط تئاتر داخلی (رویداد/صندلی/رزرو/بلیط‌های من) |
 | Loyalty | ✅ کامل (حساب/سطح/تراکنش/جایزه) |
-| Notifications | ✅ ثبت/لغو Device Token (بدون Provider واقعی Push، طبق ADR-0015) |
+| Notifications | ✅ کامل روی Native (Permission + Token واقعی FCM + ثبت)؛ روی Web پیام محدودیت صادقانه (`getDevicePushTokenAsync` طبق Expo فقط ios/android است) — ADR-0018 |
 | Profile | ✅ حداقلی (اطلاعات حساب خودم) |
 | Wallet, Services (بیمه/سفر/خودرو/سرگرمی) | 🕓 «به‌زودی» — بدون ماژول Backend (طبق ADR-0002/ADR-0015) |
 | Matches (بلیط فوتبال) | 🕓 «به‌زودی» — Django بدون JSON API برای این جریان (کشف Phase 15) |
