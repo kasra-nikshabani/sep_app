@@ -1,6 +1,6 @@
 # Infra
 
-محیط توسعه‌ی محلی (Development) با Docker Compose: PostgreSQL، Redis، Keycloak. **این تنظیمات برای Production نیستند** — Deployment واقعی موضوع Phase 20 است.
+محیط توسعه‌ی محلی (Development) با Docker Compose: PostgreSQL، Redis، Keycloak، Prometheus/Grafana/Loki/Promtail (Observability، Phase 17). **این تنظیمات برای Production نیستند** — Deployment واقعی موضوع Phase 20 است.
 
 > **وضعیت:** این Stack به‌صورت واقعی بالا آورده شد و تست شد (نه فقط بررسی Syntax) — هر سه سرویس `Up (healthy)` هستند، Realm `sepahan` با موفقیت Import شد (۴ Client، ۵ نقش، Client Scope `fan-identity` با هر دو Protocol Mapper تأیید شدند مستقیماً از دیتابیس Keycloak).
 
@@ -36,6 +36,11 @@ docker-compose ps
 | PostgreSQL | `5433` (نه ۵۴۳۲) | دو دیتابیس مجزا می‌سازد: `sepahan_app` (برای Backend، از Phase 6) و `keycloak`؛ پورت ۵۴۳۲ عمداً استفاده نشد چون یک PostgreSQL سیستمی از قبل روی این ماشین در حال اجراست |
 | Redis | `6380` (نه ۶۳۷۹) | با رمز عبور (`--requirepass`)؛ همان دلیل بالا برای تغییر پورت |
 | Keycloak | `8080` | حالت `start-dev`؛ Admin Console: `http://localhost:8080` |
+| Prometheus | `9090` | Scrape خودکار Backend روی `host.docker.internal:8081/actuator/prometheus` -- Backend باید جدا (روی Host، طبق `backend/README.md`) بالا باشد |
+| Grafana | `3030` (نه ۳۰۰۰ -- Admin Panel همان پورت را می‌خواهد) | `http://localhost:3030`، ورود با `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` از `.env`؛ Datasourceها و دو Dashboard (`Backend Overview`, `Business Metrics`) خودکار Provision می‌شوند |
+| Loki | `3100` | فقط توسط Promtail/Grafana استفاده می‌شود؛ حالت Filesystem تک‌باینری -- فقط توسعه (ADR-0019) |
+
+**نکته‌ی Phase 17:** Prometheus/Loki/Promtail/Grafana به این Stack اضافه شدند. جزئیات کامل معماری (چرا خودمیزبان، چرا Correlation ID سبک به‌جای OpenTelemetry، چرا Promtail یک فایل روی Host را می‌خواند نه Docker Socket) در [ADR-0019](../docs/adr/0019-observability.md).
 
 ## تصمیم‌ها و محدودیت‌های شناخته‌شده‌ی این فاز
 

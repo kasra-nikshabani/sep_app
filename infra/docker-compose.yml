@@ -2,7 +2,8 @@
 # استفاده: کپی .env.example به .env در همین پوشه، مقادیر را عوض کنید، سپس:
 #   docker compose --env-file .env up -d
 #
-# سرویس‌ها: PostgreSQL (با دو دیتابیس مجزا: sepahan_app و keycloak)، Redis، Keycloak (Dev Mode).
+# سرویس‌ها: PostgreSQL (با دو دیتابیس مجزا: sepahan_app و keycloak)، Redis، Keycloak (Dev Mode)،
+# Prometheus/Loki/Promtail/Grafana (Observability -- Phase 17، ADR-0019).
 # پیکربندی Realm/Client کیکلوک هنوز اضافه نشده — موضوع Phase 4.
 
 services:
@@ -67,6 +68,84 @@ services:
       retries: 12
       start_period: 30s
 
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    restart: unless-stopped
+    # Backend روی خودِ Host اجرا می‌شود (نه Container)، پس Prometheus باید بتواند از داخل
+    # Container به پورت Host برسد -- host.docker.internal روی Docker Desktop خودکار کار
+    # می‌کند، ولی روی Docker Engine خالص لینوکس (این محیط) نیاز به extra_hosts دارد.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  loki:
+    image: grafana/loki:3.6.11
+    restart: unless-stopped
+    command: ["-config.file=/etc/loki/config.yaml"]
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "${LOKI_PORT:-3100}:3100"
+    healthcheck:
+      test: ["CMD", "/usr/bin/loki", "-config.file=/etc/loki/config.yaml", "-verify-config"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  promtail:
+    image: grafana/promtail:3.6.11
+    restart: unless-stopped
+    command: ["-config.file=/etc/promtail/config.yaml"]
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      # Log واقعی Backend روی Host نوشته می‌شود (backend/logs)، نه داخل یک Container --
+      # همان دلیل extra_hosts بالا برای Prometheus.
+      - ../backend/logs:/var/log/backend:ro
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:13.1.4
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?لطفاً GRAFANA_ADMIN_PASSWORD را در .env تنظیم کنید}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      # عمداً یک Mount واحد -- تودرتو کردن یک Bind Mount دوم داخل یک Mount فقط-خواندنی
+      # (provisioning/dashboards/json به‌عنوان مسیر جدا) روی این نسخه‌ی Docker با خطای
+      # «read-only file system» شکست می‌خورد؛ چون همه‌چیز اکنون زیر یک درخت است، این مشکل
+      # رخ نمی‌دهد.
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      # ۳۰۰۰ عمداً استفاده نشد -- Admin Panel (Phase 14) هم پیش‌فرض همان پورت را می‌خواهد
+      - "${GRAFANA_PORT:-3030}:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      loki:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
+  loki_data:
+  grafana_data:

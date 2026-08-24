@@ -6,6 +6,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,8 @@ import org.junit.jupiter.api.Test;
 /**
  * تست واحد ساده (بدون Spring Context) -- NotificationService فقط به سه Interface و دو
  * Repository نیاز دارد، همه Mockable؛ هدف اصلی اثبات این است که شکست یک Provider هرگز به
- * فراخوانی‌کننده پرتاب نمی‌شود (Best-effort، ADR-0015).
+ * فراخوانی‌کننده پرتاب نمی‌شود (Best-effort، ADR-0015). SimpleMeterRegistry (نه Mock) عمداً
+ * استفاده شده -- یک پیاده‌سازی سبک و واقعی Micrometer، دقیقاً برای همین‌جور تست ساخته شده.
  */
 class NotificationServiceTest {
 
@@ -23,8 +25,8 @@ class NotificationServiceTest {
     private final NotificationLogRepository logRepository = mock(NotificationLogRepository.class);
     private final DeviceTokenRepository deviceTokenRepository = mock(DeviceTokenRepository.class);
 
-    private final NotificationService service =
-            new NotificationService(smsProvider, emailProvider, pushProvider, logRepository, deviceTokenRepository);
+    private final NotificationService service = new NotificationService(smsProvider, emailProvider, pushProvider,
+            logRepository, deviceTokenRepository, new SimpleMeterRegistry());
 
     @Test
     void sendSms_success_recordsSentLog() {

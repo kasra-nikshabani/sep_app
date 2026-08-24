@@ -1,5 +1,6 @@
 package ir.sepahan.app.loyalty;
 
+import ir.sepahan.app.observability.JitRaceMetrics;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
@@ -26,17 +27,20 @@ public class LoyaltyAccountService {
     private final PointsEarningRuleRepository earningRuleRepository;
     private final LoyaltyLevelRepository levelRepository;
     private final LoyaltyJitInsertHelper jitInsertHelper;
+    private final JitRaceMetrics jitRaceMetrics;
 
     public LoyaltyAccountService(LoyaltyAccountRepository accountRepository,
                                   LoyaltyTransactionRepository transactionRepository,
                                   PointsEarningRuleRepository earningRuleRepository,
                                   LoyaltyLevelRepository levelRepository,
-                                  LoyaltyJitInsertHelper jitInsertHelper) {
+                                  LoyaltyJitInsertHelper jitInsertHelper,
+                                  JitRaceMetrics jitRaceMetrics) {
         this.accountRepository = accountRepository;
         this.transactionRepository = transactionRepository;
         this.earningRuleRepository = earningRuleRepository;
         this.levelRepository = levelRepository;
         this.jitInsertHelper = jitInsertHelper;
+        this.jitRaceMetrics = jitRaceMetrics;
     }
 
     public LoyaltyAccount getOrCreateAccount(UUID userId) {
@@ -45,6 +49,7 @@ public class LoyaltyAccountService {
                     try {
                         return jitInsertHelper.insertAccount(userId);
                     } catch (DataIntegrityViolationException raceLost) {
+                        jitRaceMetrics.recordConflict("loyalty_account");
                         return accountRepository.findByUserId(userId).orElseThrow(() -> raceLost);
                     }
                 });

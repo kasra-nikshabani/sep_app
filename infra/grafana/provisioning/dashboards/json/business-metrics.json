@@ -1,0 +1,79 @@
+{
+  "id": null,
+  "uid": "sepapp-business-metrics",
+  "title": "Business Metrics",
+  "tags": ["sepapp", "business"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "باخت مسابقه در JIT Provisioning (بر ثانیه)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "description": "کشف Phase 15/16: هر افزایش غیرمنتظره در این نمودار یعنی هم‌زمانی واقعی روی JIT کاربر/حساب وفاداری در حال رخ‌دادن است -- طبق طراحی، این حالت باید بدون خطا برای کاربر Recovery شود، پس افزایش این عدد لزوماً مشکل نیست؛ ولی روند غیرعادی آن ارزش بررسی دارد.",
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(sepahan_jit_race_conflicts_total{job=\"sepapp-backend\"}[5m])) by (entity)",
+          "legendFormat": "{{entity}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "ارسال Notification بر اساس کانال/نتیجه (بر ثانیه)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(sepahan_notifications_sent_total{job=\"sepapp-backend\"}[5m])) by (channel, provider, status)",
+          "legendFormat": "{{channel}}/{{provider}} [{{status}}]"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "وضعیت Circuit Breaker (Zibal/SMS.ir/FCM)",
+      "type": "state-timeline",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "description": "closed=0 (سالم)، open=1 (متوقف‌شده، Providerهای واقعی مدام شکست می‌خورده‌اند)، half_open=در حال تست بازیابی.",
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "resilience4j_circuitbreaker_state{job=\"sepapp-backend\", state=\"open\"}",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "تلاش‌های ناموفق Provider واقعی (بر ثانیه)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(resilience4j_circuitbreaker_calls_seconds_count{job=\"sepapp-backend\", kind=\"failed\"}[5m])) by (name)",
+          "legendFormat": "{{name}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "خطاهای اخیر (Log سطح ERROR)",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "datasource": { "type": "loki", "uid": "sepapp-loki" },
+      "targets": [
+        {
+          "expr": "{job=\"sepapp-backend\"} | json | level=\"ERROR\""
+        }
+      ]
+    }
+  ]
+}

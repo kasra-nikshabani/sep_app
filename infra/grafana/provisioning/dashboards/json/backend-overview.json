@@ -1,0 +1,104 @@
+{
+  "id": null,
+  "uid": "sepapp-backend-overview",
+  "title": "Backend Overview",
+  "tags": ["sepapp", "backend"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "نرخ درخواست HTTP (بر ثانیه)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"sepapp-backend\"}[1m])) by (uri, status)",
+          "legendFormat": "{{uri}} [{{status}}]"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "نرخ خطای ۵xx (بر ثانیه)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{job=\"sepapp-backend\", status=~\"5..\"}[1m])) by (uri)",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "تأخیر p95 درخواست HTTP",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{job=\"sepapp-backend\"}[5m])) by (le, uri))",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "حافظه‌ی Heap (JVM)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "sum(jvm_memory_used_bytes{job=\"sepapp-backend\", area=\"heap\"}) by (id)",
+          "legendFormat": "{{id}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "اتصالات Postgres (HikariCP)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "description": "کشف Phase 16: بدون این نمودار، تمام‌شدن Pool زیر بار هم‌زمانی JIT Provisioning تنها از طریق ۵۰۰ واقعی دیده می‌شد.",
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "hikaricp_connections_active{job=\"sepapp-backend\"}",
+          "legendFormat": "Active"
+        },
+        {
+          "expr": "hikaricp_connections_idle{job=\"sepapp-backend\"}",
+          "legendFormat": "Idle"
+        },
+        {
+          "expr": "hikaricp_connections_pending{job=\"sepapp-backend\"}",
+          "legendFormat": "Pending (منتظر Connection)"
+        },
+        {
+          "expr": "hikaricp_connections_max{job=\"sepapp-backend\"}",
+          "legendFormat": "Max (Pool Size)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "مصرف CPU",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "datasource": { "type": "prometheus", "uid": "sepapp-prometheus" },
+      "targets": [
+        {
+          "expr": "process_cpu_usage{job=\"sepapp-backend\"}",
+          "legendFormat": "CPU"
+        }
+      ]
+    }
+  ]
+}

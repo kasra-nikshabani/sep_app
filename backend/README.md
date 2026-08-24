@@ -1,6 +1,8 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 16). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 17). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+
+**نکته‌ی Phase 17 (Observability):** `/actuator/prometheus` اضافه شد (Micrometer + `micrometer-registry-prometheus`، تنها Dependency جدید) -- HTTP/JVM/HikariCP/Resilience4j خودکار صادر می‌شوند، به‌علاوه دو Metric سفارشی: `sepahan_jit_race_conflicts_total{entity}` و `sepahan_notifications_sent_total{channel,provider,status}`. Logging ساختاریافته (JSON، فقط به فایل `logs/backend.json.log`، بدون Dependency جدید -- ساخته‌شده در Spring Boot 3.4+) با یک `CorrelationIdFilter` جدید که هر درخواست را با `X-Request-Id` در MDC/Header پاسخ دنبال‌پذیر می‌کند. Prometheus/Grafana/Loki/Promtail خودمیزبان به `infra/docker-compose.yml` اضافه شدند؛ دو Dashboard آماده (`Backend Overview`, `Business Metrics`) خودکار Provision می‌شوند. **`/actuator/prometheus` فعلاً بدون محدودیت شبکه‌ای است -- TODO امنیتی صریح برای Phase 19.** جزئیات کامل در [ADR-0019](../docs/adr/0019-observability.md).
 
 **نکته‌ی Phase 16:** Push واقعی با FCM مستقیم اضافه شد -- `FirebaseCloudMessagingPushProvider` (پشت `sepahan.notifications.push.provider=fcm`، پیش‌فرض همچنان `fake`) با کتابخانه‌ی رسمی `firebase-admin`. یک نقص واقعی هم رفع شد: بدون تشخیص کد خطای `UNREGISTERED` FCM (اپ حذف‌شده)، `NotificationService` دوباره و دوباره به همان Device Token مرده تلاش می‌کرد -- حالا آن Token خودکار غیرفعال می‌شود. **فعال‌سازی واقعی هنوز نیازمند یک Service Account از یک پروژه‌ی Firebase واقعی است** (`FCM_SERVICE_ACCOUNT_PATH`) -- هم‌الگوی Zibal/SMTP: پیاده‌سازی آماده، پیکربندی واقعی قبل از Production لازم.
 **مهم‌تر، یک نقص عمیق‌تر و مستقل کشف و رفع شد:** `REQUIRES_NEW` در JIT Provisioning (`UserProvisioningService`/`LoyaltyAccountService`) از Phase 5 هرگز واقعاً اثر نداشت -- Self-Invocation (فراخوانی از داخل همان کلاس) طبق رفتار مستندشده‌ی اسپرینگ کاملاً از Proxy عبور می‌کند. با یک تست هم‌زمانی واقعی (`CountDownLatch`) کشف شد؛ رفع با انتقال آن متدها به دو Bean جدا (`JitInsertHelper`, `LoyaltyJitInsertHelper`). اثر جانبی: چون REQUIRES_NEW حالا واقعاً یک Connection دوم لازم دارد، `spring.datasource.hikari.maximum-pool-size` به ۳۰ افزایش یافت. جزئیات کامل در [ADR-0018](../docs/adr/0018-real-push-notifications.md).
@@ -59,6 +61,8 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - مدل داده‌ی notifications/partners: [docs/database/erd-notifications-and-partners.md](../docs/database/erd-notifications-and-partners.md)
 - Admin Panel (Next.js 16 + Auth.js/Keycloak BFF + Ant Design): [ADR-0016](../docs/adr/0016-admin-panel.md)
 - اپ موبایل (Expo + expo-auth-session/Keycloak PKCE، CORS برای فراخوانی مستقیم، رفع باگ Race در JIT Provisioning): [ADR-0017](../docs/adr/0017-mobile-app.md)
+- Push واقعی با FCM، رفع نقص عمیق Self-Invocation در JIT Provisioning: [ADR-0018](../docs/adr/0018-real-push-notifications.md)
+- Observability (Prometheus/Grafana/Loki خودمیزبان، Correlation ID سبک): [ADR-0019](../docs/adr/0019-observability.md)
 
 ## نقشه‌ی ماژول‌ها
 

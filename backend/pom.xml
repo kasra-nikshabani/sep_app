@@ -52,6 +52,13 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
         <dependency>
+            <!-- خروجی /actuator/prometheus برای Micrometer (Phase 17، ADR-0019): بدون این،
+                 Endpoint اصلاً وجود ندارد؛ HikariCP/JVM/Resilience4j و همه‌ی Meterهای دیگر
+                 خودکار به این فرمت صادر می‌شوند، بدون کد اضافه -->
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
             <!-- برای Annotationهای Resilience4j (@CircuitBreaker/@Retry) که Proxy-based/AOP هستند -->
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>

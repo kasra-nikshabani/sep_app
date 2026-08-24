@@ -62,7 +62,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # فقط همین سه‌تا -- نه env/beans/heapdump که می‌توانند اطلاعات داخلی/راز افشا کنند
+        # (Phase 17، ADR-0019). prometheus روی همین Port عمومی (۸۰۸۱) قرار دارد و طبق
+        # SecurityConfig بدون Auth در دسترس است -- محدودسازی شبکه‌ای واقعی (فقط از IP سرور
+        # Monitoring) پیش از هر Deployment عمومی لازم است؛ موضوع Phase 19 (Security Audit).
+        include: health,info,prometheus
   endpoint:
     health:
       show-details: never
@@ -73,6 +77,21 @@ management:
     # این Health Indicator را فعال می‌کند).
     mail:
       enabled: false
+  metrics:
+    tags:
+      # همه‌ی Meterها این برچسب را می‌گیرند -- لازم برای فیلتر job="sepapp-backend" در
+      # Prometheus/Grafana وقتی چند سرویس دیگر هم در همان Instance اسکرِیپ می‌شوند.
+      application: ${spring.application.name}
+
+# Structured Logging (Phase 17، ADR-0019) -- ساخته‌شده در خودِ Spring Boot از نسخه‌ی ۳.۴
+# (بدون Dependency جدید). فقط خروجی فایل JSON است، نه Console -- ترمینال محلی خواناتر
+# می‌ماند؛ Promtail همین فایل را می‌خواند و به Loki ارسال می‌کند.
+logging:
+  file:
+    name: logs/backend.json.log
+  structured:
+    format:
+      file: logstash
 
 # ---- Payment (ADR-0011) / Shop (ADR-0012) / News (ADR-0013) ----
 # نکته: همه‌ی این‌ها زیر یک کلید ریشه‌ی sepahan هستند -- دو بلوک sepahan جدا در یک

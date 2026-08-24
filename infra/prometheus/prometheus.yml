@@ -1,0 +1,16 @@
+# پیکربندی Prometheus (Phase 17، ADR-0019). Backend روی خودِ Host اجرا می‌شود (نه داخل
+# Docker -- طبق روال توسعه‌ی این پروژه از فاز ۶)، پس با آدرس ویژه‌ی host.docker.internal
+# اسکرِیپ می‌شود، نه با نام یک سرویس Compose.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: sepapp-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["host.docker.internal:8081"]

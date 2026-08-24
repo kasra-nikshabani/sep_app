@@ -1,0 +1,24 @@
+# Backend روی خودِ Host اجرا می‌شود (نه Container)، پس Promtail از طریق Volume یک مسیر
+# مشترک با Host می‌خواند (backend/logs -> /var/log/backend داخل Container)، نه از طریق
+# Docker Socket/Container Discovery. برچسب‌گذاری فقط سطح Job/Service است -- تجزیه‌ی فیلدهای
+# JSON (level، requestId، logger و ...) در خودِ Grafana با LogQL (`| json`) انجام می‌شود،
+# نه این‌جا -- تا با تغییر احتمالی شکل خروجی Structured Logging اسپرینگ نیازی به تغییر این
+# فایل نباشد.
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: sepapp-backend
+    static_configs:
+      - targets: ["localhost"]
+        labels:
+          job: sepapp-backend
+          service: backend
+          __path__: /var/log/backend/*.json.log

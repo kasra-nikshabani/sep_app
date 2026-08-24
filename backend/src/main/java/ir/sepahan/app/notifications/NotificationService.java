@@ -1,5 +1,6 @@
 package ir.sepahan.app.notifications;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -18,14 +19,17 @@ public class NotificationService {
     private final PushProvider pushProvider;
     private final NotificationLogRepository logRepository;
     private final DeviceTokenRepository deviceTokenRepository;
+    private final MeterRegistry meterRegistry;
 
     public NotificationService(SmsProvider smsProvider, EmailProvider emailProvider, PushProvider pushProvider,
-                                NotificationLogRepository logRepository, DeviceTokenRepository deviceTokenRepository) {
+                                NotificationLogRepository logRepository, DeviceTokenRepository deviceTokenRepository,
+                                MeterRegistry meterRegistry) {
         this.smsProvider = smsProvider;
         this.emailProvider = emailProvider;
         this.pushProvider = pushProvider;
         this.logRepository = logRepository;
         this.deviceTokenRepository = deviceTokenRepository;
+        this.meterRegistry = meterRegistry;
     }
 
     public NotificationLog sendSms(String mobile, String message) {
@@ -89,6 +93,10 @@ public class NotificationService {
 
     private NotificationLog saveLog(NotificationChannel channel, String recipient, String subject, String content,
                                      NotificationStatus status, String providerName, String errorMessage) {
+        // Phase 17 (ADR-0019): تنها نقطه‌ی مشترک همه‌ی کانال‌ها/Providerها -- یک شمارنده این‌جا
+        // دید یکپارچه می‌دهد که Resilience4j به‌تنهایی نمی‌دهد (fake/smtp اصلاً Circuit Breaker ندارند).
+        meterRegistry.counter("sepahan.notifications.sent", "channel", channel.name(), "provider", providerName,
+                "status", status.name()).increment();
         return logRepository.save(new NotificationLog(channel, recipient, subject, content, status, providerName, errorMessage));
     }
 }
