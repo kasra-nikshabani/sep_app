@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
+import ir.sepahan.app.TestcontainersConfig;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Set;
@@ -13,13 +14,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.server.ResponseStatusException;
 
 /**
- * این تست‌ها به Postgres واقعی نیاز دارند (طبق backend/README.md)، هم‌سبک
- * OrderServiceTest/ReservationServiceTest (Phase 8-10).
+ * این تست‌ها به Postgres واقعی نیاز دارند، هم‌سبک OrderServiceTest/ReservationServiceTest
+ * (Phase 8-10) -- از Phase 18 (ADR-0020) از طریق Testcontainers ایزوله ساخته می‌شود.
  */
 @SpringBootTest
+@Import(TestcontainersConfig.class)
+@ActiveProfiles("test")
 class ArticleServiceTest {
 
     @Autowired

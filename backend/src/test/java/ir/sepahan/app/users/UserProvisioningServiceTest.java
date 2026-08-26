@@ -2,6 +2,7 @@ package ir.sepahan.app.users;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ir.sepahan.app.TestcontainersConfig;
 import ir.sepahan.app.fan.FanProfileRepository;
 import java.time.Instant;
 import java.util.List;
@@ -16,7 +17,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * به Postgres واقعی نیاز دارد (هم‌الگوی ReservationServiceTest -- ADR-0010). هدف: اثبات رفتار
@@ -28,6 +31,8 @@ import org.springframework.security.oauth2.jwt.Jwt;
  * (SQLState=25P02 -- تلاش برای Query در یک Transaction از قبل Aborted) شکست می‌خوردند.
  */
 @SpringBootTest
+@Import(TestcontainersConfig.class)
+@ActiveProfiles("test")
 class UserProvisioningServiceTest {
 
     @Autowired

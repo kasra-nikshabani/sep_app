@@ -3,6 +3,7 @@ package ir.sepahan.app.ticketing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ir.sepahan.app.TestcontainersConfig;
 import ir.sepahan.app.payments.Payment;
 import ir.sepahan.app.payments.PaymentRepository;
 import ir.sepahan.app.payments.PaymentService;
@@ -20,17 +21,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
- * این تست‌ها به Postgres/Redis واقعی نیاز دارند (همان‌هایی که در Phase 3 در
- * infra/docker-compose.yml بالا آمدند) -- عمداً از Mock/Testcontainers استفاده
- * نشده چون هدف اصلی، اثبات رفتار واقعی قفل Redis تحت هم‌زمانی واقعی است
- * (ADR-0010)؛ انتخاب نهایی استراتژی تست خودکار کل پروژه موضوع Phase 18 است.
- *
- * قبل از اجرا: infra باید بالا باشد و BACKEND_DB_PASSWORD/INFRA_REDIS_PASSWORD
- * در Environment ست شده باشند (طبق backend/README.md).
+ * به Postgres/Redis واقعی نیاز دارد تا رفتار واقعی قفل Redis تحت هم‌زمانی واقعی اثبات شود
+ * (ADR-0010) -- نه Mock. از Phase 18 (ADR-0020)، این Postgres/Redis واقعی از طریق
+ * Testcontainers موقت و ایزوله ساخته می‌شود (همان Image واقعی، نه Fake) -- دیگر نیازی به
+ * روشن‌بودن {@code infra/} یا Export دستی Env Var نیست.
  */
 @SpringBootTest
+@Import(TestcontainersConfig.class)
+@ActiveProfiles("test")
 class ReservationServiceTest {
 
     @Autowired

@@ -1,0 +1,9 @@
+# فعال با @ActiveProfiles("test") روی هر تست @SpringBootTest -- طبق مکانیزم Profile-specific
+# اسپرینگ‌بوت، روی application.yml اصلی لایه می‌شود (نه جایگزین کامل آن). تنها هدف: مقداری
+# بدون‌خطر برای Propertyهایی که در application.yml اصلی عمداً بدون Default هستند (Fail-fast
+# واقعی در Production) اما در تست هرگز واقعاً استفاده نمی‌شوند -- Django اصلاً در تست بالا
+# نیست، Polling با خطای اتصال شکست می‌خورد و بی‌اثر می‌ماند (طبق طراحی Self-healing ADR-0014).
+sepahan:
+  loyalty:
+    django:
+      service-token: test-token-not-used

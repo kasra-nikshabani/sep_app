@@ -48,5 +48,11 @@ mobile/android/app/build/
 *.log
 coverage/
 
+# Structured logs written at runtime (Phase 17/18، ADR-0019/0020) -- شامل فایل‌های Rotate/
+# Gzip‌شده‌ی Logback که با *.log ساده گرفته نمی‌شوند؛ backend/logs/ باید در Checkout خالی
+# وجود داشته باشد (Mount شده توسط Promtail) پس فقط محتوا نادیده گرفته می‌شود، نه خودِ پوشه.
+backend/logs/*
+!backend/logs/.gitkeep
+
 # Infra local state (Phase 3+)
 infra/**/*.local.yml

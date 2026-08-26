@@ -159,6 +159,7 @@ sepapp/
 | [0017](../adr/0017-mobile-app.md) | اپ موبایل: Expo + expo-auth-session/Keycloak (PKCE، Client عمومی)؛ Wallet/Services/Matches «به‌زودی» صادقانه؛ رفع باگ واقعی Race در JIT Provisioning (Phase 15) |
 | [0018](../adr/0018-real-push-notifications.md) | Push واقعی با FCM مستقیم (firebase-admin)؛ رفع نقص Token مرده‌ی تکرارشونده؛ رفع نقص عمیق‌تر Self-Invocation در JIT Provisioning (users/loyalty، از Phase 5)؛ محدودیت پذیرفته‌شده‌ی بدون تست زنده (Phase 16) |
 | [0019](../adr/0019-observability.md) | Observability: Prometheus + Grafana + Loki خودمیزبان، Correlation ID سبک (بدون OpenTelemetry)، Metricهای سفارشی JIT Race/Notifications (Phase 17) |
+| [0020](../adr/0020-test-strategy.md) | استراتژی تست: Testcontainers (بدون وابستگی به infra مشترک)، پوشش واقعی HTTP/RBAC، CI (GitHub Actions، غیرفعال تا Push)، کشف `@AutoConfigureObservability` (Phase 18) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

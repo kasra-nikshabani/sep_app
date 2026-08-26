@@ -1,6 +1,8 @@
 # Backend — Spring Boot Modular Monolith
 
-**وضعیت:** قابل‌اجرا (Phase 17). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+**وضعیت:** قابل‌اجرا (Phase 18). Spring Boot 3.5.16 / Java 21 / Maven (با Maven Wrapper) — [ADR-0009](../docs/adr/0009-spring-boot-baseline.md). ماژول‌های واقعاً پیاده‌شده تا این فاز: `auth`, `users`, `fan`, `ticketing`, `payments`, `shop`, `news`, `loyalty`, `notifications`, `partners` (بقیه‌ی جدول زیر هنوز فقط برنامه‌ریزی‌شده‌اند، در فازهای خودشان ساخته می‌شوند).
+
+**نکته‌ی Phase 18 (استراتژی تست):** تست‌ها دیگر به Stack زیرساخت مشترک یا Env Var دستی نیاز ندارند -- `./mvnw test` به‌تنهایی، بلافاصله بعد از `git clone`، کل Suite را سبز اجرا می‌کند (Testcontainers یک Postgres/Redis موقت و ایزوله می‌سازد). یک لایه‌ی تست HTTP/RBAC واقعی هم اضافه شد (`SecurityRbacIntegrationTest`) -- شکاف قبلی: تا این فاز هیچ تستی `@PreAuthorize`/CORS/زنجیره‌ی امنیتی واقعی را از طریق یک درخواست HTTP واقعی تمرین نمی‌کرد. یک CI (`.github/workflows/ci.yml`) هم نوشته شد -- غیرفعال تا این پروژه به یک Remote واقعی Push شود. جزئیات کامل (از جمله کشف `@AutoConfigureObservability`) در [ADR-0020](../docs/adr/0020-test-strategy.md).
 
 **نکته‌ی Phase 17 (Observability):** `/actuator/prometheus` اضافه شد (Micrometer + `micrometer-registry-prometheus`، تنها Dependency جدید) -- HTTP/JVM/HikariCP/Resilience4j خودکار صادر می‌شوند، به‌علاوه دو Metric سفارشی: `sepahan_jit_race_conflicts_total{entity}` و `sepahan_notifications_sent_total{channel,provider,status}`. Logging ساختاریافته (JSON، فقط به فایل `logs/backend.json.log`، بدون Dependency جدید -- ساخته‌شده در Spring Boot 3.4+) با یک `CorrelationIdFilter` جدید که هر درخواست را با `X-Request-Id` در MDC/Header پاسخ دنبال‌پذیر می‌کند. Prometheus/Grafana/Loki/Promtail خودمیزبان به `infra/docker-compose.yml` اضافه شدند؛ دو Dashboard آماده (`Backend Overview`, `Business Metrics`) خودکار Provision می‌شوند. **`/actuator/prometheus` فعلاً بدون محدودیت شبکه‌ای است -- TODO امنیتی صریح برای Phase 19.** جزئیات کامل در [ADR-0019](../docs/adr/0019-observability.md).
 
@@ -63,6 +65,16 @@ export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d=
 - اپ موبایل (Expo + expo-auth-session/Keycloak PKCE، CORS برای فراخوانی مستقیم، رفع باگ Race در JIT Provisioning): [ADR-0017](../docs/adr/0017-mobile-app.md)
 - Push واقعی با FCM، رفع نقص عمیق Self-Invocation در JIT Provisioning: [ADR-0018](../docs/adr/0018-real-push-notifications.md)
 - Observability (Prometheus/Grafana/Loki خودمیزبان، Correlation ID سبک): [ADR-0019](../docs/adr/0019-observability.md)
+- استراتژی تست (Testcontainers، پوشش HTTP/RBAC، CI): [ADR-0020](../docs/adr/0020-test-strategy.md)
+
+## اجرای تست‌ها
+
+```bash
+./mvnw test                              # کل Suite -- بدون infra روشن، بدون Env Var
+./mvnw test -Dtest='!ZibalPaymentProviderTest'   # هم‌الگوی CI؛ Zibal به Sandbox خارجی وصل می‌شود
+```
+
+از Phase 18 (ADR-0020)، هیچ Setup‌ای لازم نیست -- Testcontainers یک Postgres/Redis موقت می‌سازد و بعد از هر اجرا پاک می‌کند (نیازمند Docker در دسترس، مثل بقیه‌ی این پروژه). `ZibalPaymentProviderTest` تنها استثناست: عمداً به Sandbox واقعی و خارجی Zibal وصل می‌شود، پس بی‌ثبات است -- در CI کنار گذاشته شده.
 
 ## نقشه‌ی ماژول‌ها
 

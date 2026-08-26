@@ -11,7 +11,8 @@ sepapp/
 ├── backend/        Spring Boot — Modular Monolith (Phase 6+)
 ├── admin-panel/     Next.js + TypeScript (Phase 14+)
 ├── mobile/          React Native + TypeScript (Phase 15+)
-├── infra/           Docker Compose، پیکربندی Keycloak، CI (Phase 3+)
+├── infra/           Docker Compose، پیکربندی Keycloak، Observability (Phase 3+, Phase 17+)
+├── .github/         CI — GitHub Actions (Phase 18+؛ غیرفعال تا Push شدن به یک Remote واقعی)
 └── docs/
     ├── architecture/   نمای کلی معماری + پایه‌ی UI/UX
     ├── adr/            تصمیم‌های معماری (Architecture Decision Records)

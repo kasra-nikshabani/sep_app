@@ -1,0 +1,85 @@
+# Phase 18 (ADR-0020). این پروژه هنوز هیچ Remote Git ندارد -- این Workflow تا Push شدن به
+# یک Repository واقعی روی GitHub غیرفعال/بی‌اثر می‌ماند؛ از نظر ساختاری آماده و تأییدشده است
+# (مسیرهای Job به‌صورت محلی معادل‌سازی و اجرا شدند، نه فقط بررسی Syntax).
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('backend/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2-
+
+      # Testcontainers (Phase 18، ADR-0020) یک Postgres/Redis موقت و ایزوله در خودِ Runner
+      # می‌سازد -- بدون نیاز به بالا آوردن infra/docker-compose.yml یا هیچ Env Var دستی.
+      # ubuntu-latest از قبل Docker نصب دارد.
+      #
+      # ZibalPaymentProviderTest عمداً حذف شده: به یک Sandbox واقعی و خارجی (Zibal) وصل
+      # می‌شود که در طبیعتش بی‌ثبات است (طبق Javadoc خودِ آن فایل) -- ناپایداری آن نباید
+      # کل CI را قرمز کند؛ رفع/بازبینی این تصمیم موضوع تصمیم‌های تست بعدی است.
+      - name: Run tests
+        run: ./mvnw -B test -Dtest='!ZibalPaymentProviderTest'
+
+      - name: Upload surefire reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-surefire-reports
+          path: backend/target/surefire-reports/
+
+  admin-panel-typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin-panel
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: admin-panel/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+
+  mobile-typecheck:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck

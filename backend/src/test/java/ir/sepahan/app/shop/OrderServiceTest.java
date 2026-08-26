@@ -3,6 +3,7 @@ package ir.sepahan.app.shop;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import ir.sepahan.app.TestcontainersConfig;
 import ir.sepahan.app.payments.Payment;
 import ir.sepahan.app.payments.PaymentRepository;
 import ir.sepahan.app.payments.PaymentService;
@@ -21,13 +22,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
- * این تست‌ها به Postgres واقعی نیاز دارند (طبق backend/README.md) -- عمداً بدون
- * Mock، دقیقاً هم‌سبک ReservationServiceTest (Phase 8/9) چون هدف اصلی اثبات رفتار
- * واقعی کاهش اتمی موجودی و جریان کامل Event-driven پرداخت است (ADR-0012).
+ * به Postgres واقعی نیاز دارد -- عمداً بدون Mock، دقیقاً هم‌سبک ReservationServiceTest
+ * (Phase 8/9) چون هدف اصلی اثبات رفتار واقعی کاهش اتمی موجودی و جریان کامل Event-driven
+ * پرداخت است (ADR-0012). از Phase 18 (ADR-0020) از طریق Testcontainers ایزوله ساخته می‌شود.
  */
 @SpringBootTest
+@Import(TestcontainersConfig.class)
+@ActiveProfiles("test")
 class OrderServiceTest {
 
     @Autowired

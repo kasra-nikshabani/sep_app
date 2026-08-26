@@ -2,17 +2,22 @@ package ir.sepahan.app.partners;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ir.sepahan.app.TestcontainersConfig;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * روی Postgres واقعی (طبق backend/README.md) تا جست‌وجوی واقعی بر اساس Hash کلید
  * تأیید شود -- Mock کردن این منطق شکننده می‌بود (باید Hash را در تست هم بازتولید می‌کردیم).
  */
 @SpringBootTest
+@Import(TestcontainersConfig.class)
+@ActiveProfiles("test")
 class PartnerServiceTest {
 
     @Autowired
