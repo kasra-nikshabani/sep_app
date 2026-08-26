@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -29,11 +30,16 @@ public class CorrelationIdFilter extends OncePerRequestFilter {
     public static final String HEADER_NAME = "X-Request-Id";
     public static final String MDC_KEY = "requestId";
 
+    // فقط حروف/عدد/خط‌تیره تا ۶۴ کاراکتر -- طول یک UUID با کمی حاشیه. یک مقدار دلخواه از
+    // Client (بدون این محدودیت) می‌توانست وارد هر خط Log ساختاریافته و Header پاسخ شود
+    // (کشف Phase 19: بدون خطر تزریق در Log JSON، اما بدون دلیل موجه برای بدون‌محدودیت ماندن).
+    private static final Pattern SAFE_REQUEST_ID = Pattern.compile("^[a-zA-Z0-9-]{1,64}$");
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String requestId = request.getHeader(HEADER_NAME);
-        if (requestId == null || requestId.isBlank()) {
+        if (requestId == null || !SAFE_REQUEST_ID.matcher(requestId).matches()) {
             requestId = UUID.randomUUID().toString();
         }
         response.setHeader(HEADER_NAME, requestId);

@@ -3,9 +3,13 @@ package ir.sepahan.app.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ir.sepahan.app.TestcontainersConfig;
+import ir.sepahan.app.notifications.DevicePlatform;
+import ir.sepahan.app.notifications.DeviceTokenRepository;
+import ir.sepahan.app.notifications.RegisterDeviceTokenRequest;
 import ir.sepahan.app.security.TestJwtDecoderConfig;
 import ir.sepahan.app.security.TestJwtSupport;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
@@ -45,6 +49,13 @@ class SecurityRbacIntegrationTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
+    @Autowired
+    private DeviceTokenRepository deviceTokenRepository;
+
+    @AfterEach
+    void tearDown() {
+        deviceTokenRepository.deleteAll();
+    }
 
     @Test
     void actuatorHealth_isPubliclyAccessible_withoutToken() {
@@ -53,9 +64,14 @@ class SecurityRbacIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
-    /** طبق ADR-0019 -- Prometheus بدون Bearer Token اسکرِیپ می‌کند. */
+    /**
+     * طبق ADR-0019/ADR-0021 -- Prometheus بدون Bearer Token اسکرِیپ می‌کند؛ از Phase 19 فقط از
+     * شبکه‌ی خصوصی/Loopback مجاز است، نه واقعاً «عمومی». این تست همیشه از Loopback وصل می‌شود
+     * (TestRestTemplate) پس فقط مسیر مجاز را اثبات می‌کند -- مسیر رد در
+     * {@link MonitoringNetworkAuthorizationManagerTest} (بدون نیاز به یک Server واقعی) اثبات شده.
+     */
     @Test
-    void actuatorPrometheus_isPubliclyAccessible_withoutToken() {
+    void actuatorPrometheus_isAccessibleFromLoopback_withoutToken() {
         ResponseEntity<String> response = restTemplate.getForEntity("/actuator/prometheus", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -138,6 +154,48 @@ class SecurityRbacIntegrationTest {
                 new HttpEntity<>(headers), String.class);
 
         assertThat(response.getHeaders().getFirst("Access-Control-Allow-Origin")).isNull();
+    }
+
+    /**
+     * IDOR رفع‌شده در Phase 19: قبلاً {@code unregister} هیچ بررسی مالکیتی نداشت -- هر کاربر
+     * احراز هویت‌شده‌ای که مقدار Token شخص دیگری را می‌دانست می‌توانست اعلان‌های او را بی‌صدا
+     * غیرفعال کند.
+     */
+    @Test
+    void deviceTokenUnregister_byDifferentUser_doesNotDeactivateToken() {
+        String victimToken = TestJwtSupport.tokenFor(UUID.randomUUID(), "fan");
+        String attackerToken = TestJwtSupport.tokenFor(UUID.randomUUID(), "fan");
+        String deviceTokenValue = "victim-device-token-" + UUID.randomUUID();
+        registerDeviceToken(victimToken, deviceTokenValue);
+
+        ResponseEntity<Void> response = restTemplate.exchange("/api/v1/notifications/device-tokens/" + deviceTokenValue,
+                HttpMethod.DELETE, new HttpEntity<>(authHeaders(attackerToken)), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT); // Idempotent، بدون افشای وجود/عدم‌وجود Token
+        assertThat(deviceTokenRepository.findByTokenAndDeletedAtIsNull(deviceTokenValue).orElseThrow().isActive())
+                .as("Token قربانی باید فعال بماند -- فقط خودش اجازه‌ی لغو دارد").isTrue();
+    }
+
+    @Test
+    void deviceTokenUnregister_byOwner_deactivatesToken() {
+        String ownerToken = TestJwtSupport.tokenFor(UUID.randomUUID(), "fan");
+        String deviceTokenValue = "own-device-token-" + UUID.randomUUID();
+        registerDeviceToken(ownerToken, deviceTokenValue);
+
+        ResponseEntity<Void> response = restTemplate.exchange("/api/v1/notifications/device-tokens/" + deviceTokenValue,
+                HttpMethod.DELETE, new HttpEntity<>(authHeaders(ownerToken)), Void.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(deviceTokenRepository.findByTokenAndDeletedAtIsNull(deviceTokenValue).orElseThrow().isActive()).isFalse();
+    }
+
+    private void registerDeviceToken(String bearerToken, String deviceTokenValue) {
+        HttpHeaders headers = authHeaders(bearerToken);
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        RegisterDeviceTokenRequest body = new RegisterDeviceTokenRequest(deviceTokenValue, DevicePlatform.android);
+        ResponseEntity<Void> response = restTemplate.exchange("/api/v1/notifications/device-tokens", HttpMethod.POST,
+                new HttpEntity<>(body, headers), Void.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     private HttpHeaders authHeaders(String token) {

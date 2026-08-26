@@ -13,11 +13,19 @@ export class BackendError extends Error {
  * فراخوانی مستقیم Backend از Server Component/Server Action -- طبق ADR-0003،
  * مرورگر هرگز مستقیم به Spring Boot وصل نمی‌شود (بدون CORS روی آن عمداً).
  * برای فراخوانی از Client Component به‌جای این، از src/app/api/backend/[...path] استفاده شود.
+ *
+ * بررسی نقش admin این‌جا عمداً تکرار می‌شود (علاوه بر proxy.ts/layout.tsx) -- آن دو فقط
+ * ناوبری صفحه را کنترل می‌کنند؛ Server Action خودش یک Endpoint POST جدا دارد که ممکن است
+ * مسیر Layout را دور بزند. اگر Backend هم یک @PreAuthorize را جا بیندازد، این خط دومین و
+ * مستقل‌ترین لایه‌ی دفاع است، نه تنها لایه (Phase 19، ADR-0021).
  */
 export async function backendFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const session = await auth();
   if (!session?.accessToken) {
     throw new BackendError(401, "Session معتبر یا accessToken موجود نیست");
+  }
+  if (!session.roles?.includes("admin")) {
+    throw new BackendError(403, "این حساب نقش admin ندارد");
   }
 
   const response = await fetch(`${process.env.BACKEND_API_BASE_URL}${path}`, {
@@ -45,6 +53,9 @@ export async function backendUpload<T>(path: string, formData: FormData): Promis
   const session = await auth();
   if (!session?.accessToken) {
     throw new BackendError(401, "Session معتبر یا accessToken موجود نیست");
+  }
+  if (!session.roles?.includes("admin")) {
+    throw new BackendError(403, "این حساب نقش admin ندارد");
   }
 
   const response = await fetch(`${process.env.BACKEND_API_BASE_URL}${path}`, {

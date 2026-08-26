@@ -18,6 +18,9 @@ public class FakeEmailProvider implements EmailProvider {
 
     @Override
     public void send(String to, String subject, String body) {
-        log.info("[FakeEmailProvider] ارسال شبیه‌سازی‌شده به {} -- موضوع: {}", to, subject);
+        // آدرس کامل عمداً Log نمی‌شود -- هم‌الگوی FakeSmsProvider (Phase 19).
+        int at = to.indexOf('@');
+        String masked = at > 0 ? to.substring(0, Math.min(2, at)) + "***" + to.substring(at) : "***";
+        log.info("[FakeEmailProvider] ارسال شبیه‌سازی‌شده به {} -- موضوع: {}", masked, subject);
     }
 }

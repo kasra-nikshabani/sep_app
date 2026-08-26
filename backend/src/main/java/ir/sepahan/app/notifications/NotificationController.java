@@ -28,22 +28,35 @@ public class NotificationController {
         this.userProvisioningService = userProvisioningService;
     }
 
+    /**
+     * اگر Token قبلاً زیر یک کاربر دیگر ثبت شده باشد (مثلاً دستگاه دست‌به‌دست شده)، مالکیت به
+     * کاربر تازه منتقل می‌شود -- وگرنه اعلان‌ها همچنان به نام صاحب قبلی ارسال می‌شد (کشف Phase 19).
+     */
     @PostMapping("/device-tokens")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterDeviceTokenRequest request, @AuthenticationPrincipal Jwt jwt) {
         UUID userId = currentUserId(jwt);
         DeviceToken deviceToken = deviceTokenRepository.findByTokenAndDeletedAtIsNull(request.token())
                 .orElseGet(() -> new DeviceToken(userId, request.token(), request.platform()));
+        deviceToken.setUserId(userId);
         deviceToken.setActive(true);
         deviceTokenRepository.save(deviceToken);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    /**
+     * IDOR رفع‌شده در Phase 19: قبلاً هر کاربر احراز هویت‌شده‌ای که مقدار Token شخص دیگری را
+     * می‌دانست (مثلاً از طریق نشت دستگاه/بدافزار) می‌توانست اعلان‌های او را بی‌صدا غیرفعال کند --
+     * حالا فقط صاحب واقعی همان Token اجازه‌ی لغو دارد.
+     */
     @DeleteMapping("/device-tokens/{token}")
-    public ResponseEntity<Void> unregister(@PathVariable String token) {
-        deviceTokenRepository.findByTokenAndDeletedAtIsNull(token).ifPresent(deviceToken -> {
-            deviceToken.setActive(false);
-            deviceTokenRepository.save(deviceToken);
-        });
+    public ResponseEntity<Void> unregister(@PathVariable String token, @AuthenticationPrincipal Jwt jwt) {
+        UUID userId = currentUserId(jwt);
+        deviceTokenRepository.findByTokenAndDeletedAtIsNull(token)
+                .filter(deviceToken -> deviceToken.getUserId().equals(userId))
+                .ifPresent(deviceToken -> {
+                    deviceToken.setActive(false);
+                    deviceTokenRepository.save(deviceToken);
+                });
         return ResponseEntity.noContent().build();
     }
 

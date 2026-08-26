@@ -43,6 +43,11 @@ public class DeviceToken extends BaseEntity {
         return userId;
     }
 
+    /** لازم برای انتقال مالکیت وقتی یک Token قبلاً زیر کاربر دیگری ثبت شده بود (Phase 19). */
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
     public String getToken() {
         return token;
     }

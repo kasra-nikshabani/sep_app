@@ -160,6 +160,7 @@ sepapp/
 | [0018](../adr/0018-real-push-notifications.md) | Push واقعی با FCM مستقیم (firebase-admin)؛ رفع نقص Token مرده‌ی تکرارشونده؛ رفع نقص عمیق‌تر Self-Invocation در JIT Provisioning (users/loyalty، از Phase 5)؛ محدودیت پذیرفته‌شده‌ی بدون تست زنده (Phase 16) |
 | [0019](../adr/0019-observability.md) | Observability: Prometheus + Grafana + Loki خودمیزبان، Correlation ID سبک (بدون OpenTelemetry)، Metricهای سفارشی JIT Race/Notifications (Phase 17) |
 | [0020](../adr/0020-test-strategy.md) | استراتژی تست: Testcontainers (بدون وابستگی به infra مشترک)، پوشش واقعی HTTP/RBAC، CI (GitHub Actions، غیرفعال تا Push)، کشف `@AutoConfigureObservability` (Phase 18) |
+| [0021](../adr/0021-security-audit.md) | ممیزی امنیتی: رفع IDOR در Device Token، محدودسازی شبکه‌ای `/actuator/prometheus`، سخت‌سازی Realm Keycloak، محدودسازی پورت Docker Compose، دفاع دومیه‌ی نقش Admin در Server Action (Phase 19) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

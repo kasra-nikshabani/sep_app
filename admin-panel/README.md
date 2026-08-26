@@ -1,6 +1,8 @@
 # Admin Panel — Next.js + TypeScript
 
-**وضعیت:** قابل‌اجرا (Phase 14). Next.js 16 (App Router، Turbopack) + TypeScript + Auth.js v5 (Keycloak) + Ant Design — [ADR-0016](../docs/adr/0016-admin-panel.md).
+**وضعیت:** قابل‌اجرا (Phase 19). Next.js 16 (App Router، Turbopack) + TypeScript + Auth.js v5 (Keycloak) + Ant Design — [ADR-0016](../docs/adr/0016-admin-panel.md).
+
+**نکته‌ی Phase 19 (ممیزی امنیتی):** `backendFetch`/`backendUpload` (`src/lib/backend.ts`) حالا یک بررسی نقش `admin` مستقل هم دارند -- علاوه بر بررسی موجود `proxy.ts`/`layout.tsx`. دلیل: یک Server Action مسیر فراخوانی جداگانه‌ی خودش دارد که می‌تواند ساختاری آن بررسی سطح صفحه را دور بزند؛ این خط دومین و مستقل‌ترین لایه‌ی دفاع است. تأیید زنده در مرورگر (ورود واقعی + Dashboard/`/users`) انجام شد. جزئیات کامل در [ADR-0021](../docs/adr/0021-security-audit.md).
 
 ## اجرا (محلی، در برابر Backend + Keycloak زنده)
 

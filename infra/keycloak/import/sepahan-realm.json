@@ -22,7 +22,7 @@
   "waitIncrementSeconds": 60,
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
-  "passwordPolicy": "length(10) and notUsername(undefined) and passwordHistory(3)",
+  "passwordPolicy": "length(10) and notUsername(undefined) and passwordHistory(3) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1)",
   "accessTokenLifespan": 300,
   "accessTokenLifespanForImplicitFlow": 300,
   "ssoSessionIdleTimeout": 1800,
@@ -758,7 +758,7 @@
       },
       "redirectUris": [
         "sepahan://auth/callback",
-        "http://localhost:8081/*"
+        "http://localhost:8082/*"
       ],
       "webOrigins": [
         "+"

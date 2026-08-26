@@ -38,10 +38,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // Prometheus از داخل Docker Compose این مسیر را بدون Bearer Token اسکرِیپ
-                        // می‌کند (خودش یک کاربر Keycloak نیست) -- طبق تصمیم صریح Phase 17 (ADR-0019)،
-                        // محدودسازی واقعی (فقط از IP سرور Monitoring) پیش از هر Deployment عمومی
-                        // لازم است؛ این یک TODO امنیتی صریح برای Phase 19 (Security Audit) است.
-                        .requestMatchers("/actuator/prometheus").permitAll()
+                        // می‌کند (خودش یک کاربر Keycloak نیست) -- به‌جای permitAll مطلق (TODO امنیتی
+                        // صریح از Phase 17)، از Phase 19 فقط از شبکه‌ی خصوصی/Loopback در دسترس است
+                        // (جزئیات/تست در MonitoringNetworkAuthorizationManager).
+                        .requestMatchers("/actuator/prometheus").access(new MonitoringNetworkAuthorizationManager())
                         // Zibal مرورگر کاربر را مستقیم به این مسیر Redirect می‌کند (بدون Bearer Token) --
                         // امنیت واقعی از طریق Verify سرور-به-سرور در PaymentService تأمین می‌شود، نه Auth این مسیر (ADR-0011)
                         .requestMatchers("/api/v1/payments/*/callback").permitAll()

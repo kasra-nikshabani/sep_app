@@ -33,12 +33,14 @@ docker-compose ps
 
 | سرویس | پورت پیش‌فرض | یادداشت |
 |---|---|---|
-| PostgreSQL | `5433` (نه ۵۴۳۲) | دو دیتابیس مجزا می‌سازد: `sepahan_app` (برای Backend، از Phase 6) و `keycloak`؛ پورت ۵۴۳۲ عمداً استفاده نشد چون یک PostgreSQL سیستمی از قبل روی این ماشین در حال اجراست |
-| Redis | `6380` (نه ۶۳۷۹) | با رمز عبور (`--requirepass`)؛ همان دلیل بالا برای تغییر پورت |
-| Keycloak | `8080` | حالت `start-dev`؛ Admin Console: `http://localhost:8080` |
-| Prometheus | `9090` | Scrape خودکار Backend روی `host.docker.internal:8081/actuator/prometheus` -- Backend باید جدا (روی Host، طبق `backend/README.md`) بالا باشد |
-| Grafana | `3030` (نه ۳۰۰۰ -- Admin Panel همان پورت را می‌خواهد) | `http://localhost:3030`، ورود با `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` از `.env`؛ Datasourceها و دو Dashboard (`Backend Overview`, `Business Metrics`) خودکار Provision می‌شوند |
-| Loki | `3100` | فقط توسط Promtail/Grafana استفاده می‌شود؛ حالت Filesystem تک‌باینری -- فقط توسعه (ADR-0019) |
+| PostgreSQL | `127.0.0.1:5433` (نه ۵۴۳۲) | دو دیتابیس مجزا می‌سازد: `sepahan_app` (برای Backend، از Phase 6) و `keycloak`؛ پورت ۵۴۳۲ عمداً استفاده نشد چون یک PostgreSQL سیستمی از قبل روی این ماشین در حال اجراست |
+| Redis | `127.0.0.1:6380` (نه ۶۳۷۹) | با رمز عبور (`--requirepass`)؛ همان دلیل بالا برای تغییر پورت |
+| Keycloak | `8080` | حالت `start-dev`؛ Admin Console: `http://localhost:8080` -- عمداً روی `0.0.0.0` باقی مانده (پشت Login واقعی است، طبق ADR-0021) |
+| Prometheus | `127.0.0.1:9090` | Scrape خودکار Backend روی `host.docker.internal:8081/actuator/prometheus` -- Backend باید جدا (روی Host، طبق `backend/README.md`) بالا باشد |
+| Grafana | `3030` (نه ۳۰۰۰ -- Admin Panel همان پورت را می‌خواهد) | `http://localhost:3030`، ورود با `GRAFANA_ADMIN_USER`/`GRAFANA_ADMIN_PASSWORD` از `.env`؛ Datasourceها و دو Dashboard (`Backend Overview`, `Business Metrics`) خودکار Provision می‌شوند؛ عمداً روی `0.0.0.0` باقی مانده (پشت Login واقعی است، طبق ADR-0021) |
+| Loki | `127.0.0.1:3100` | فقط توسط Promtail/Grafana استفاده می‌شود؛ حالت Filesystem تک‌باینری -- فقط توسعه (ADR-0019) |
+
+**نکته‌ی Phase 19 (ممیزی امنیتی):** پورت‌های PostgreSQL/Redis/Prometheus/Loki از `"host:port"` به `"127.0.0.1:host:port"` تغییر کردند -- دیگر از ماشین‌های دیگر همان شبکه در دسترس نیستند (بدون هیچ اثری روی ارتباط بین‌Containeری یا دسترسی از `localhost` خودِ همین Host). Keycloak/Grafana عمداً کنار گذاشته شدند چون هر دو پشت یک صفحه‌ی ورود واقعی هستند. Realm `sepahan` هم سخت‌تر شد: یک Redirect URI اشتباه Client موبایل اصلاح و Password Policy تقویت شد (طول حداقل، پیچیدگی، تاریخچه). جزئیات کامل در [ADR-0021](../docs/adr/0021-security-audit.md).
 
 **نکته‌ی Phase 17:** Prometheus/Loki/Promtail/Grafana به این Stack اضافه شدند. جزئیات کامل معماری (چرا خودمیزبان، چرا Correlation ID سبک به‌جای OpenTelemetry، چرا Promtail یک فایل روی Host را می‌خواند نه Docker Socket) در [ADR-0019](../docs/adr/0019-observability.md).
 

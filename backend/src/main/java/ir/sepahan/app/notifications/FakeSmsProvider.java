@@ -19,6 +19,8 @@ public class FakeSmsProvider implements SmsProvider {
 
     @Override
     public void send(String mobile, String message) {
-        log.info("[FakeSmsProvider] ارسال شبیه‌سازی‌شده به {}: {}", mobile, message);
+        // شماره‌ی کامل و متن پیام عمداً Log نمی‌شوند -- این Logهای JSON از Phase 17 به Loki
+        // ارسال می‌شوند؛ همان دلیلی که FakePushProvider از قبل Token را کامل Log نمی‌کرد (Phase 19).
+        log.info("[FakeSmsProvider] ارسال شبیه‌سازی‌شده به {}***", mobile.length() > 4 ? mobile.substring(0, 4) : mobile);
     }
 }
