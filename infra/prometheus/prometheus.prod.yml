@@ -1,0 +1,16 @@
+# پیکربندی Prometheus برای Prod (Phase 20، ADR-0022) -- برخلاف prometheus.yml (Dev، Backend
+# روی Host)، این‌جا Backend خودش یک Container روی همان شبکه‌ی Docker است؛ با نام سرویس
+# اسکرِیپ می‌شود، نه host.docker.internal.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: sepapp-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["backend:8081"]

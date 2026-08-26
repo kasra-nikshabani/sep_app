@@ -1,0 +1,46 @@
+# Profile مخصوص Deploy واقعی (Phase 20، ADR-0022) -- با SPRING_PROFILES_ACTIVE=prod در
+# docker-compose.prod.yml فعال می‌شود. فقط مقادیری که واقعاً بین Dev/Prod فرق دارند این‌جا
+# Override می‌شوند؛ application.yml پایه هنوز مرجع همه‌ی مقادیر دیگر است.
+
+server:
+  # بدون این، Backend همیشه IP خودِ Caddy (Container کناری روی همان شبکه‌ی Docker) را به‌عنوان
+  # IP واقعی Client می‌بیند -- هم Log/Audit را نادرست می‌کند، هم مهم‌تر:
+  # MonitoringNetworkAuthorizationManager (ADR-0021) دیگر نمی‌تواند یک Client عمومی واقعی را
+  # از یک درخواست داخلی تشخیص دهد (چون هر دو از دید آن «از پشت یک IP خصوصی» می‌آیند). با
+  # native، امبدد Tomcat (RemoteIpValve) با اعتماد پیش‌فرض به بازه‌های خصوصی/Loopback -- که
+  # زیرشبکه‌ی Docker این پروژه (172.28.238.0/24) هم داخل همان بازه‌ی 172.16.0.0/12 است --
+  # X-Forwarded-For واقعی Caddy را می‌خواند و remoteAddr را به IP واقعی Client برمی‌گرداند
+  # (تأیید شده از سورس واقعی ServerProperties.java نسخه‌ی دقیق ۳.۵.۱۶، نه حدس؛ FRAMEWORK به‌جای
+  # NATIVE این کار را نمی‌کند -- فقط Scheme/Host را عوض می‌کند، نه remoteAddr).
+  forward-headers-strategy: native
+
+spring:
+  # فقط این‌جا (نه application.yml پایه) چون Backend حالا خودش یک Container روی همان شبکه‌ی
+  # Docker با Postgres/Redis است -- باید با نام سرویس (DNS داخلی Compose) وصل شود، نه با
+  # IP/Port منتشرشده‌ی Host (که در Prod اصلاً هم منتشر نمی‌شود -- ADR-0022).
+  datasource:
+    url: jdbc:postgresql://postgres:5432/sepahan_app
+  data:
+    redis:
+      host: redis
+      port: 6379
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # آدرس عمومی واقعی Keycloak (پشت Caddy) -- باید دقیقاً برابر claim صادرشده‌ی
+          # واقعی iss در توکن‌های واقعی کاربر باشد (چون کاربر از طریق همین آدرس عمومی وارد
+          # می‌شود، نه از طریق شبکه‌ی داخلی). یک هزینه‌ی کوچک پذیرفته‌شده: دریافت JWKS هم از
+          # همین آدرس عمومی انجام می‌شود (یک Round-trip اضافه‌ی داخلی->عمومی->داخلی، فقط در
+          # Refresh دوره‌ای JWKS، نه هر درخواست) -- جایگزین‌های رد‌شده در ADR-0022.
+          issuer-uri: ${PUBLIC_KEYCLOAK_ISSUER_URL}
+
+sepahan:
+  payments:
+    # Zibal مرورگر کاربر را مستقیم به این آدرس Redirect می‌کند -- باید عمومی و واقعی باشد،
+    # نه localhost (که برای مرورگر کاربر بی‌معنی است).
+    callback-base-url: ${PUBLIC_BACKEND_BASE_URL}
+  news:
+    media:
+      # مرورگر/Admin Panel/اپ موبایل این آدرس را مستقیم در <img src> استفاده می‌کنند.
+      public-base-url: ${PUBLIC_BACKEND_BASE_URL}/media

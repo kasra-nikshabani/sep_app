@@ -161,6 +161,7 @@ sepapp/
 | [0019](../adr/0019-observability.md) | Observability: Prometheus + Grafana + Loki خودمیزبان، Correlation ID سبک (بدون OpenTelemetry)، Metricهای سفارشی JIT Race/Notifications (Phase 17) |
 | [0020](../adr/0020-test-strategy.md) | استراتژی تست: Testcontainers (بدون وابستگی به infra مشترک)، پوشش واقعی HTTP/RBAC، CI (GitHub Actions، غیرفعال تا Push)، کشف `@AutoConfigureObservability` (Phase 18) |
 | [0021](../adr/0021-security-audit.md) | ممیزی امنیتی: رفع IDOR در Device Token، محدودسازی شبکه‌ای `/actuator/prometheus`، سخت‌سازی Realm Keycloak، محدودسازی پورت Docker Compose، دفاع دومیه‌ی نقش Admin در Server Action (Phase 19) |
+| [0022](../adr/0022-deployment.md) | Deployment: Dockerfile چندمرحله‌ای Backend/Admin Panel، Caddy به‌عنوان تنها ورودی عمومی، `forward-headers-strategy: native`، Keycloak در حالت Production، کشف نقص Merge کلید `ports` در Compose (Phase 20) |
 
 ## 7. خارج از محدوده‌ی Phase 1
 

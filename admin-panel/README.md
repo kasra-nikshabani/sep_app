@@ -1,6 +1,8 @@
 # Admin Panel — Next.js + TypeScript
 
-**وضعیت:** قابل‌اجرا (Phase 19). Next.js 16 (App Router، Turbopack) + TypeScript + Auth.js v5 (Keycloak) + Ant Design — [ADR-0016](../docs/adr/0016-admin-panel.md).
+**وضعیت:** قابل‌اجرا (Phase 20). Next.js 16 (App Router، Turbopack) + TypeScript + Auth.js v5 (Keycloak) + Ant Design — [ADR-0016](../docs/adr/0016-admin-panel.md).
+
+**نکته‌ی Phase 20 (Deployment):** یک `Dockerfile` چندمرحله‌ای با `output: "standalone"` (الگوی رسمی Next.js برای Docker) اضافه شد؛ `npm run dev` محلی بدون تغییر. در Production پشت Caddy، `AUTH_TRUST_HOST=true` الزامی است (طبق مستندات رسمی Auth.js). جزئیات کامل در [ADR-0022](../docs/adr/0022-deployment.md).
 
 **نکته‌ی Phase 19 (ممیزی امنیتی):** `backendFetch`/`backendUpload` (`src/lib/backend.ts`) حالا یک بررسی نقش `admin` مستقل هم دارند -- علاوه بر بررسی موجود `proxy.ts`/`layout.tsx`. دلیل: یک Server Action مسیر فراخوانی جداگانه‌ی خودش دارد که می‌تواند ساختاری آن بررسی سطح صفحه را دور بزند؛ این خط دومین و مستقل‌ترین لایه‌ی دفاع است. تأیید زنده در مرورگر (ورود واقعی + Dashboard/`/users`) انجام شد. جزئیات کامل در [ADR-0021](../docs/adr/0021-security-audit.md).
 

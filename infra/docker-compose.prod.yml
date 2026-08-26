@@ -1,0 +1,153 @@
+# لایه‌ی Production روی docker-compose.yml پایه (Phase 20، ADR-0022) -- تکی اجرا نمی‌شود:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# چیزهایی که این فایل روی پایه اضافه/عوض می‌کند: دو سرویس تازه (backend، admin-panel، هر دو
+# از Dockerfile خودشان Build می‌شوند)، یک Caddy جلوی همه به‌عنوان تنها ورودی عمومی، Keycloak
+# از start-dev به start (+ تنظیمات Proxy/Hostname واقعی)، و مسیر Scrape واقعی Prometheus/محل
+# لاگ Promtail (چون Backend دیگر روی Host نیست، داخل همین شبکه است).
+#
+# چرا یک فایل override به‌جای کپی کامل: postgres/redis/prometheus/loki/grafana/promtail هیچ
+# تفاوت واقعی جز همین چند مورد ندارند -- تکرار کامل یعنی دو نسخه از هر تغییر بعدی نگه‌داری شود.
+#
+# subnet ثابت شبکه‌ی Docker به یک دلیل امنیتی واقعی لازم است، نه فقط نظم: Backend با
+# server.forward-headers-strategy=native (application-prod.yml) فقط وقتی IP واقعی Client را
+# از X-Forwarded-For می‌خواند که IP فرستنده‌ی بی‌واسطه (Caddy) داخل بازه‌ی از‌قبل-معتبر Tomcat
+# باشد -- طبق سورس واقعی ServerProperties.java (نسخه‌ی دقیق نصب‌شده‌ی این پروژه، ۳.۵.۱۶)، آن
+# بازه شامل کامل 172.16.0.0/12 است، پس همین subnet ثابت خودکار پوشش داده می‌شود؛ حدس نبود.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.238.0/24
+
+services:
+  keycloak:
+    # start (نه start-dev) طبق مستندات رسمی Keycloak برای Production؛ --import-realm در حالت
+    # start هم کار می‌کند و طبق همان مستندات، اگر Realm از قبل وجود داشته باشد (مثلاً بعد از
+    # یک Restart) صرفاً Skip می‌شود -- نه Overwrite، پس تغییرات زنده‌ی بعدی پاک نمی‌شوند.
+    command: ["start", "--import-realm"]
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:?لطفاً KEYCLOAK_ADMIN را در .env.prod تنظیم کنید}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?لطفاً KEYCLOAK_ADMIN_PASSWORD را در .env.prod تنظیم کنید}
+      # نام‌های جدید و غیرمنسوخ همان مقدار بالا (Keycloak 26 -- KEYCLOAK_ADMIN* را Deprecated
+      # کرده)؛ عمداً از همان دو متغیر .env استفاده شده تا کارفرما مجبور به تعریف چهار مقدار
+      # تکراری نباشد.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-keycloak}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?لطفاً KEYCLOAK_DB_PASSWORD را در .env.prod تنظیم کنید}
+      KC_HEALTH_ENABLED: "true"
+      # TLS واقعی روی Caddy Terminate می‌شود؛ Keycloak خودش فقط HTTP داخلی صحبت می‌کند
+      # (مستندات رسمی: «edge termination» -- KC_HTTP_ENABLED الزامی است).
+      KC_HOSTNAME: https://${PUBLIC_DOMAIN_KEYCLOAK}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      # فقط از داخل همین Subnet (یعنی عملاً فقط Caddy) به X-Forwarded-For اعتماد کن.
+      KC_PROXY_TRUSTED_ADDRESSES: 172.28.238.0/24
+    # پورت (KEYCLOAK_BIND_ADDRESS=127.0.0.1) در infra/.env.prod تنظیم می‌شود -- خودِ کلید
+    # ports این‌جا Override نمی‌شود چون این نسخه‌ی docker-compose (v1.29.2) با آن به‌جای
+    # Replace فقط Append می‌کند (تأیید شده با docker-compose config، رجوع به
+    # docker-compose.yml برای جزئیات کامل).
+
+  prometheus:
+    volumes:
+      - ./prometheus/prometheus.prod.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+
+  promtail:
+    volumes:
+      - ./promtail/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      # Backend دیگر روی Host نیست (Dev: ../backend/logs Bind Mount) -- حالا یک Container
+      # جدا (backend) و این‌جا (promtail) همین Volume نام‌دار مشترک را می‌خوانند/می‌نویسند.
+      - backend_logs:/var/log/backend:ro
+
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?لطفاً GRAFANA_ADMIN_PASSWORD را در .env.prod تنظیم کنید}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # بدون این دو، لینک‌ها/Redirectهای خودِ Grafana پشت Caddy درست ساخته نمی‌شوند
+      # (مستندات رسمی Grafana برای Reverse Proxy روی یک Subdomain کامل، نه Subpath).
+      GF_SERVER_ROOT_URL: https://${PUBLIC_DOMAIN_GRAFANA}
+      GF_SERVER_DOMAIN: ${PUBLIC_DOMAIN_GRAFANA}
+    # پورت (GRAFANA_BIND_ADDRESS=127.0.0.1) در infra/.env.prod تنظیم می‌شود -- هم‌دلیل Keycloak بالا.
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      BACKEND_DB_PASSWORD: ${BACKEND_DB_PASSWORD:?لطفاً BACKEND_DB_PASSWORD را در .env.prod تنظیم کنید}
+      INFRA_REDIS_PASSWORD: ${REDIS_PASSWORD:?لطفاً REDIS_PASSWORD را در .env.prod تنظیم کنید}
+      LOYALTY_DJANGO_SERVICE_TOKEN: ${LOYALTY_DJANGO_SERVICE_TOKEN:?لطفاً LOYALTY_DJANGO_SERVICE_TOKEN را در .env.prod تنظیم کنید}
+      # آدرس واقعی ticket.sepahansc در Production -- بدون Fallback به localhost (که در
+      # Prod به‌کل بی‌معنی است؛ خودِ Django بخشی از این Compose نیست، طبق مرز مستندشده‌ی ADR-0014).
+      INFRA_DJANGO_BASE_URL: ${INFRA_DJANGO_BASE_URL:?لطفاً INFRA_DJANGO_BASE_URL را در .env.prod تنظیم کنید}
+      # اختیاری -- فقط اگر نسخه‌ی Web اپ موبایل هم جایی Public میزبانی شود (خارج از دامنه‌ی این فاز).
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      PUBLIC_KEYCLOAK_ISSUER_URL: https://${PUBLIC_DOMAIN_KEYCLOAK}/realms/sepahan
+      PUBLIC_BACKEND_BASE_URL: https://${PUBLIC_DOMAIN_BACKEND}
+      # بقیه‌ی متغیرهای اختیاری (SMS_IR_*, SMTP_*, FCM_SERVICE_ACCOUNT_PATH, ...) دقیقاً هم‌نام
+      # با infra/.env.example هستند و فقط اگر Provider واقعی (نه fake) فعال شود لازم می‌شوند --
+      # جزئیات در docs/deployment.md.
+    volumes:
+      - backend_logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  admin-panel:
+    build:
+      context: ../admin-panel
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      KEYCLOAK_CLIENT_ID: admin-panel
+      KEYCLOAK_CLIENT_SECRET: ${ADMIN_PANEL_KEYCLOAK_CLIENT_SECRET:?لطفاً ADMIN_PANEL_KEYCLOAK_CLIENT_SECRET را در .env.prod تنظیم کنید}
+      KEYCLOAK_ISSUER: https://${PUBLIC_DOMAIN_KEYCLOAK}/realms/sepahan
+      AUTH_SECRET: ${ADMIN_PANEL_AUTH_SECRET:?لطفاً ADMIN_PANEL_AUTH_SECRET را در .env.prod تنظیم کنید}
+      AUTH_URL: https://${PUBLIC_DOMAIN_ADMIN}
+      # الزامی پشت هر Reverse Proxy (مستندات رسمی Auth.js) -- بدون این، Auth.js به
+      # X-Forwarded-Host اعتماد نمی‌کند و Redirect/Callback واقعی خراب می‌شود.
+      AUTH_TRUST_HOST: "true"
+      # صدا زدن مستقیم Backend از داخل همین شبکه‌ی Docker -- نه از طریق Caddy/دامنه‌ی عمومی
+      # (سریع‌تر، بدون وابستگی به DNS/TLS برای یک تماس کاملاً داخلی سرور-به-سرور).
+      BACKEND_API_BASE_URL: http://backend:8081
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL:?لطفاً CADDY_ACME_EMAIL را در .env.prod تنظیم کنید}
+      PUBLIC_DOMAIN_BACKEND: ${PUBLIC_DOMAIN_BACKEND:?لطفاً PUBLIC_DOMAIN_BACKEND را در .env.prod تنظیم کنید}
+      PUBLIC_DOMAIN_ADMIN: ${PUBLIC_DOMAIN_ADMIN:?لطفاً PUBLIC_DOMAIN_ADMIN را در .env.prod تنظیم کنید}
+      PUBLIC_DOMAIN_KEYCLOAK: ${PUBLIC_DOMAIN_KEYCLOAK:?لطفاً PUBLIC_DOMAIN_KEYCLOAK را در .env.prod تنظیم کنید}
+      PUBLIC_DOMAIN_GRAFANA: ${PUBLIC_DOMAIN_GRAFANA:?لطفاً PUBLIC_DOMAIN_GRAFANA را در .env.prod تنظیم کنید}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+      - admin-panel
+      - keycloak
+      - grafana
+
+volumes:
+  backend_logs:
+  caddy_data:
+  caddy_config:

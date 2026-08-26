@@ -1,0 +1,35 @@
+# Reverse Proxy واحد ورودی این Stack در Production (Phase 20، ADR-0022؛ انتخاب صریح
+# کارفرما به‌جای Nginx/Traefik). به‌جز Caddy، هیچ سرویس دیگری پورت را روی Host منتشر
+# نمی‌کند -- یعنی مسیر واقعی هر Client بیرونی همیشه از همین‌جا عبور می‌کند (پیش‌نیاز درست
+# بودن server.forward-headers-strategy=native در Backend -- رجوع به application-prod.yml).
+#
+# HTTPS خودکار (Let's Encrypt) نیازمند یک دامنه‌ی واقعی است که به IP این سرور Point شده
+# باشد و پورت‌های ۸۰/۴۴۳ از اینترنت به این سرور برسند -- بدون این دو، Caddy روی همان دامنه
+# با HTTP ساده بالا می‌آید (برای تست محلی/بدون دامنه‌ی واقعی هنوز کاربردی است، فقط بدون TLS).
+
+{
+	email {$CADDY_ACME_EMAIL}
+}
+
+{$PUBLIC_DOMAIN_BACKEND} {
+	# /actuator/prometheus از قبل در خودِ Backend محدود به شبکه‌ی خصوصی/Loopback است
+	# (MonitoringNetworkAuthorizationManager، ADR-0021) و با forward-headers-strategy=native
+	# یک Client عمومی واقعی پشت Caddy هم درست رد می‌شود -- این بلاک فقط یک لایه‌ی دفاع
+	# اضافه در همان مرز ورودی است، نه تنها لایه.
+	handle /actuator/prometheus {
+		respond 404
+	}
+	reverse_proxy backend:8081
+}
+
+{$PUBLIC_DOMAIN_ADMIN} {
+	reverse_proxy admin-panel:3000
+}
+
+{$PUBLIC_DOMAIN_KEYCLOAK} {
+	reverse_proxy keycloak:8080
+}
+
+{$PUBLIC_DOMAIN_GRAFANA} {
+	reverse_proxy grafana:3000
+}

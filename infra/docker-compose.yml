@@ -53,11 +53,17 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?لطفاً KEYCLOAK_ADMIN_PASSWORD را در .env تنظیم کنید}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
-      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-postgres}
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USERNAME:-keycloak}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?لطفاً KEYCLOAK_DB_PASSWORD را در .env تنظیم کنید}
       KC_HEALTH_ENABLED: "true"
+    # KEYCLOAK_BIND_ADDRESS پیش‌فرض 0.0.0.0 است (رفتار فعلی Dev، بدون تغییر) --
+    # infra/.env.prod این را روی 127.0.0.1 تنظیم می‌کند (Phase 20، ADR-0022). تجربه‌ی این فاز:
+    # Override کردن خودِ ports با ports: [] در یک فایل Override روی این نسخه‌ی docker-compose
+    # (v1.29.2) واقعاً پاک نمی‌شود -- برخلاف volumes/command، به‌جای Replace فقط Append
+    # می‌شود (تأیید شده با docker-compose config، نه فرض)؛ به همین دلیل به‌جای Override این
+    # کلید در docker-compose.prod.yml، خودِ Bind Address این‌جا Env-driven شده.
     ports:
-      - "${KEYCLOAK_PORT:-8080}:8080"
+      - "${KEYCLOAK_BIND_ADDRESS:-0.0.0.0}:${KEYCLOAK_PORT:-8080}:8080"
     volumes:
       # فایل Realm Export (Phase 4) — با --import-realm بالا در startup خوانده می‌شود
       - ./keycloak/import:/opt/keycloak/data/import:ro
@@ -138,9 +144,12 @@ services:
       # رخ نمی‌دهد.
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
+    # GRAFANA_BIND_ADDRESS پیش‌فرض 0.0.0.0 است (رفتار فعلی Dev) -- infra/.env.prod آن را روی
+    # 127.0.0.1 تنظیم می‌کند (Phase 20، ADR-0022؛ همان دلیل Keycloak بالا -- ports: [] در یک
+    # Override روی این نسخه‌ی docker-compose پورت پایه را حذف نمی‌کند، Append می‌کند).
     ports:
       # ۳۰۰۰ عمداً استفاده نشد -- Admin Panel (Phase 14) هم پیش‌فرض همان پورت را می‌خواهد
-      - "${GRAFANA_PORT:-3030}:3000"
+      - "${GRAFANA_BIND_ADDRESS:-0.0.0.0}:${GRAFANA_PORT:-3030}:3000"
     depends_on:
       prometheus:
         condition: service_healthy
