@@ -1,8 +1,7 @@
-import { useColorScheme } from "react-native";
-import { darkColors, lightColors, type ThemeColors } from "@/theme";
+import { lightColors, type ThemeColors } from "@/theme";
 
+// طبق درخواست صریح کارفرما، حالت تیره کامل غیرفعال شد -- همیشه پس‌زمینه‌ی سفید/روشن
+// با آیکون‌های مشکی، مستقل از تنظیمات تیره‌ی سیستم‌عامل کاربر.
 export function useTheme(): { colors: ThemeColors; dark: boolean } {
-  const scheme = useColorScheme();
-  const dark = scheme === "dark";
-  return { colors: dark ? darkColors : lightColors, dark };
+  return { colors: lightColors, dark: false };
 }

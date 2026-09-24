@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Layout, Menu, Button, Dropdown, Space, Typography } from "antd";
 import {
   BulbOutlined,
@@ -50,13 +51,19 @@ export function AppShell({
             margin: 12,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            color: "#E8A80E",
-            fontWeight: 900,
-            fontSize: collapsed ? 14 : 18,
+            justifyContent: collapsed ? "center" : "flex-start",
+            gap: 10,
+            paddingInline: collapsed ? 0 : 4,
           }}
         >
-          {collapsed ? "سپاهان" : "پنل مدیریت سپاهان"}
+          <Image src="/sepahan-logo.png" alt="نشان باشگاه فولاد مبارکه سپاهان" width={36} height={36} priority />
+          {!collapsed && (
+            <span style={{ color: "#E8A80E", fontWeight: 900, fontSize: 15, lineHeight: 1.3 }}>
+              پنل مدیریت
+              <br />
+              سپاهان
+            </span>
+          )}
         </div>
         <Menu
           theme="dark"

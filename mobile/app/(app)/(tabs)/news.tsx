@@ -2,6 +2,7 @@ import { FlatList, View, Pressable, ActivityIndicator, Image } from "react-nativ
 import { Link } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
+import { BrandMark } from "@/components/BrandMark";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useArticles } from "@/features/news/api";
@@ -17,7 +18,12 @@ export default function NewsScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         data={data ?? []}
         keyExtractor={(a) => a.id}
-        ListHeaderComponent={<ThemedText variant="h1">اخبار</ThemedText>}
+        ListHeaderComponent={
+          <View style={{ gap: spacing.md }}>
+            <BrandMark />
+            <ThemedText variant="h1">اخبار</ThemedText>
+          </View>
+        }
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListEmptyComponent={
           isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>خبری موجود نیست</ThemedText>

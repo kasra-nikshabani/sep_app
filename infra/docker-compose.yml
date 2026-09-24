@@ -67,6 +67,8 @@ services:
     volumes:
       # فایل Realm Export (Phase 4) — با --import-realm بالا در startup خوانده می‌شود
       - ./keycloak/import:/opt/keycloak/data/import:ro
+      # تم سفارشی فقط لوگو (بدون بازنویسی Template) -- realm.loginTheme=sepahan آن را فعال می‌کند
+      - ./keycloak/themes/sepahan:/opt/keycloak/themes/sepahan:ro
     depends_on:
       postgres:
         condition: service_healthy

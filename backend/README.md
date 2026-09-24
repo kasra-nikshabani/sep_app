@@ -31,8 +31,11 @@ cd infra && docker-compose --env-file .env up -d && ./keycloak/fix-user-profile.
 cd ../backend
 export $(grep -E '^BACKEND_DB_PASSWORD=' ../infra/.env)
 export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d= -f2-)
+export $(grep -E '^LOYALTY_DJANGO_SERVICE_TOKEN=' ../infra/.env)
 ./mvnw spring-boot:run
 ```
+
+بدون `LOYALTY_DJANGO_SERVICE_TOKEN`، خودِ بالا آمدن Backend شکست می‌خورد (`PlaceholderResolutionException` روی `DjangoOrderPollingService`) -- این Property بدون مقدار پیش‌فرض در `application.yml` تعریف شده، پس اختیاری نیست.
 
 سرور روی `http://localhost:8081` بالا می‌آید. `GET /actuator/health` بدون Auth در دسترس است؛ بقیه‌ی `/api/**` نیازمند یک Bearer Token معتبر از Keycloak Realm `sepahan` هستند (`iss: http://localhost:8080/realms/sepahan`).
 

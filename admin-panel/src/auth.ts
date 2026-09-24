@@ -72,6 +72,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       issuer: process.env.KEYCLOAK_ISSUER,
     }),
   ],
+  // theme.logo روی صفحه‌ی پیش‌فرض Sign-in این پیکربندی (فقط یک OAuth Provider، بدون فرم
+  // Credentials) اصلاً رندر نمی‌شود -- تأیید شده با بازرسی مستقیم HTML واقعی، نه فرض؛ به‌جای
+  // آن یک صفحه‌ی کاملاً سفارشی جایگزین شد (src/app/signin/page.tsx).
+  pages: {
+    signIn: "/signin",
+  },
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, account }) {

@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, Image } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth } from "@/lib/auth";
 import { useTheme } from "@/hooks/useTheme";
@@ -15,9 +15,11 @@ export default function LoginScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: "center", justifyContent: "center", padding: spacing.xxl, gap: spacing.xl }}>
-      <ThemedText variant="display" style={{ color: colors.gold }}>
-        س
-      </ThemedText>
+      <Image
+        source={require("../assets/sepahan-logo.png")}
+        style={{ width: 96, height: 96 }}
+        accessibilityLabel="نشان باشگاه فولاد مبارکه سپاهان"
+      />
       <ThemedText variant="h1" style={{ textAlign: "center" }}>
         باشگاه فولاد مبارکه سپاهان
       </ThemedText>

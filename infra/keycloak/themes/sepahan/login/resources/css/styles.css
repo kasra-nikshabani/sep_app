@@ -1,0 +1,198 @@
+/* بازطراحی حرفه‌ای صفحه‌ی ورود/ثبت‌نام -- طبق هویت بصری Admin Panel/موبایل
+   (docs/architecture/ui-ux/design-system.html). ترکیب دو‌رنگ: پنل برند تیره + پنل فرم روشن،
+   با استفاده از مکانیزم Split واقعی و رسمی خودِ PatternFly v5 (--xl--GridTemplateColumns)
+   که تم پیش‌فرض Keycloak خودش خاموش کرده بود -- نه یک Grid ابداعی. همه‌ی متغیرها از خودِ
+   patternfly.min.css نصب‌شده استخراج و تأیید شدند. بدون بازنویسی هیچ Template ای. */
+
+@font-face {
+    font-family: "Vazirmatn";
+    src: url("../fonts/Vazirmatn-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Vazirmatn";
+    src: url("../fonts/Vazirmatn-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Vazirmatn";
+    src: url("../fonts/Vazirmatn-Black.woff2") format("woff2");
+    font-weight: 900;
+    font-display: swap;
+}
+
+:root {
+    --keycloak-logo-url: url('../img/sepahan-logo.png');
+    --keycloak-logo-width: 40px;
+    --keycloak-logo-height: 40px;
+    --keycloak-card-top-color: #E8A80E;
+
+    --pf-v5-global--FontFamily--text: "Vazirmatn", Tahoma, Arial, sans-serif;
+    --pf-v5-global--FontFamily--heading: "Vazirmatn", Tahoma, Arial, sans-serif;
+
+    --pf-v5-global--primary-color--100: #E8A80E;
+    --pf-v5-global--primary-color--200: #9C7209;
+    --pf-v5-global--primary-color--300: #9C7209;
+    --pf-v5-global--primary-color--dark-100: #E8A80E;
+    --pf-v5-global--primary-color--light-100: #F3C765;
+    --pf-v5-global--link--Color: #9C7209;
+    --pf-v5-global--link--Color--hover: #6E5106;
+
+    /* پالت پنل فرم -- روشن، طبق lightColors همان theme.ts */
+    --sepahan-form-bg: #FAF8F2;
+    --sepahan-form-surface: #FFFFFF;
+    --sepahan-form-text: #14110A;
+    --sepahan-form-muted: #4D4530;
+    --sepahan-form-border: #E3DAC0;
+
+    /* پالت پنل برند -- تیره */
+    --sepahan-brand-bg-1: #1C170D;
+    --sepahan-brand-bg-2: #14110A;
+    --sepahan-brand-text: #F6EFDD;
+    --sepahan-brand-muted: #CBBFA0;
+
+    --pf-v5-global--BackgroundColor--100: var(--sepahan-form-surface);
+    --pf-v5-global--Color--100: var(--sepahan-form-text);
+}
+
+html, body {
+    font-family: var(--pf-v5-global--FontFamily--text);
+}
+
+.login-pf body {
+    background: var(--sepahan-brand-bg-2);
+}
+
+.pf-v5-c-login__main {
+    --pf-v5-c-login__main--BackgroundColor: var(--sepahan-form-bg);
+    color: var(--sepahan-form-text);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.pf-v5-c-login__main-header {
+    border-top: 4px solid var(--keycloak-card-top-color);
+}
+
+.pf-v5-c-title,
+#kc-page-title {
+    color: var(--sepahan-form-text);
+    font-weight: 900;
+}
+
+.pf-v5-c-login__main-header-desc,
+.pf-v5-c-form__helper-text,
+label {
+    color: var(--sepahan-form-muted);
+}
+
+/* برچسب کوچک بالای فرم (پیش‌فرض Uppercase/Letter-spacing سنگین PatternFly حذف شد) */
+#kc-header-wrapper {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--sepahan-brand-muted) !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+#kc-header-wrapper::before {
+    content: "";
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    background-image: var(--keycloak-logo-url);
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.pf-v5-c-button.pf-m-primary {
+    --pf-v5-c-button--m-primary--Color: #14110A;
+    --pf-v5-c-button--m-primary--hover--Color: #14110A;
+    --pf-v5-c-button--m-primary--focus--Color: #14110A;
+    --pf-v5-c-button--m-primary--active--Color: #14110A;
+    border-radius: 10px;
+    font-weight: 500;
+    padding-top: 12px;
+    padding-bottom: 12px;
+}
+
+/* Wrapper واقعی هر Input یک <span> جداست، نه خودِ <input> (تأیید زنده از DOM واقعی) */
+.pf-v5-c-form-control {
+    background-color: var(--sepahan-form-surface) !important;
+    border: 1px solid var(--sepahan-form-border) !important;
+    border-radius: 9px !important;
+}
+.pf-v5-c-form-control input,
+.pf-v5-c-form-control select {
+    color: var(--sepahan-form-text) !important;
+}
+.pf-v5-c-form-control input::placeholder {
+    color: #AB9968 !important;
+}
+
+a {
+    color: var(--pf-v5-global--link--Color);
+}
+
+/* ---------- پنل برند (Split-Screen) -- فقط در عرض کافی، طبق همان Breakpoint رسمی xl خودِ
+   PatternFly که تم پایه‌ی Keycloak آن را خاموش کرده بود. ---------- */
+@media (min-width: 1200px) {
+    .pf-v5-c-login__container {
+        grid-template-columns: var(--pf-v5-c-login__container--xl--GridTemplateColumns, 34rem minmax(auto, 34rem));
+        grid-template-areas: "header main";
+        max-width: none;
+        align-items: stretch;
+        column-gap: 64px;
+    }
+
+    .pf-v5-c-login__header {
+        background: linear-gradient(155deg, var(--sepahan-brand-bg-1), var(--sepahan-brand-bg-2));
+        border-radius: 18px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 56px 40px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    /* یک هاله‌ی طلایی ملایم پشت نشان -- بدون هیچ تصویر اضافه، فقط Gradient */
+    .pf-v5-c-login__header::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 480px;
+        height: 480px;
+        transform: translate(-50%, -50%);
+        background: radial-gradient(circle, rgba(232,168,14,0.16) 0%, rgba(232,168,14,0) 70%);
+        pointer-events: none;
+    }
+
+    #kc-header-wrapper {
+        flex-direction: column;
+        gap: 28px;
+        font-size: 22px;
+        font-weight: 900;
+        font-family: "Vazirmatn", Tahoma, Arial, sans-serif;
+        color: var(--sepahan-brand-text) !important;
+        text-align: center;
+        max-width: 22rem;
+        z-index: 1;
+    }
+
+    #kc-header-wrapper::before {
+        width: 168px;
+        height: 168px;
+    }
+}

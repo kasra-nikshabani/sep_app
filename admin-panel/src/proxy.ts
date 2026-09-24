@@ -13,7 +13,12 @@ export default auth((req) => {
   const session = req.auth;
 
   if (!session) {
-    const signInUrl = new URL("/api/auth/signin", req.nextUrl.origin);
+    // بدون این استثنا، چون /signin هم بدون Session است، خودش را دوباره Redirect می‌کند
+    // (حلقه‌ی بی‌نهایت) -- pages.signIn در auth.ts همین مسیر را به‌عنوان صفحه‌ی ورود معرفی می‌کند.
+    if (pathname === "/signin") {
+      return NextResponse.next();
+    }
+    const signInUrl = new URL("/signin", req.nextUrl.origin);
     signInUrl.searchParams.set("callbackUrl", req.nextUrl.href);
     return NextResponse.redirect(signInUrl);
   }
@@ -26,5 +31,8 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth).*)"],
+  // فایل‌های استاتیک عمومی (مثل لوگو) هم عمداً کنار گذاشته شدند -- بدون این، وقتی
+  // next/image این فایل‌ها را داخلی Fetch می‌کند، خودش به این Middleware می‌خورد و به‌جای
+  // تصویر واقعی، HTML صفحه‌ی ورود برمی‌گردد (کشف واقعی همین فاز).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/auth|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico)$).*)"],
 };

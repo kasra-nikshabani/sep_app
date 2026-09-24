@@ -1,14 +1,12 @@
 import { View } from "react-native";
-import { useTheme } from "@/hooks/useTheme";
-import { spacing } from "@/theme";
+import { spacing, palette } from "@/theme";
 import { ThemedText } from "./ThemedText";
-import { GiftIcon } from "./Icon";
+import { GiftIcon, type IconComponent } from "./Icon";
 
-export function ComingSoon({ title, reason }: { title: string; reason: string }) {
-  const { colors } = useTheme();
+export function ComingSoon({ title, reason, Icon = GiftIcon }: { title: string; reason: string; Icon?: IconComponent }) {
   return (
     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: spacing.xxl, gap: spacing.md }}>
-      <GiftIcon color={colors.textMuted} size={40} />
+      <Icon color={palette.n900} size={40} />
       <ThemedText variant="h2">{title} -- به‌زودی</ThemedText>
       <ThemedText muted style={{ textAlign: "center" }}>
         {reason}
