@@ -25,6 +25,7 @@ import { spacing, radius, palette } from "@/theme";
 import { useMe } from "@/features/users/api";
 import { useLoyaltyAccount } from "@/features/loyalty/api";
 import { useAuth } from "@/lib/auth";
+import { formatNumber, toPersianDigits } from "@/lib/format";
 
 type ServiceItem =
   | { kind: "link"; label: string; Icon: IconComponent; href: string; soon?: boolean }
@@ -228,7 +229,7 @@ function LeagueTable() {
             }}
           >
             <ThemedText variant="caption" muted style={{ width: 24, textAlign: "center" }}>
-              {index + 1}
+              {toPersianDigits(index + 1)}
             </ThemedText>
             <ThemedText
               style={{
@@ -240,17 +241,17 @@ function LeagueTable() {
               {row.team}
             </ThemedText>
             <ThemedText variant="caption" muted style={{ width: 44, textAlign: "center", fontVariant: ["tabular-nums"] }}>
-              {row.played}
+              {toPersianDigits(row.played)}
             </ThemedText>
             <ThemedText style={{ width: 44, textAlign: "center", fontFamily: "Vazirmatn-Medium", fontVariant: ["tabular-nums"] }}>
-              {row.points}
+              {toPersianDigits(row.points)}
             </ThemedText>
           </View>
         ))}
       </Card>
 
       <ThemedText variant="caption" muted style={{ textAlign: "center" }}>
-        منبع: ورزش۳ -- به‌روزرسانی ۲ شهریور ۱۴۰۵ (عکس ثابت، بدون اتصال زنده)
+        منبع: ورزش۳ · آخرین به‌روزرسانی: ۲ شهریور ۱۴۰۵
       </ThemedText>
     </View>
   );
@@ -296,11 +297,14 @@ export default function HomeScreen() {
 
       <LinearGradient
         colors={[palette.gold300, palette.gold500, palette.gold700]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={{ borderRadius: radius.card, padding: spacing.lg, gap: spacing.sm }}
+        // روشن از بالا-راست (شروع متن در RTL) به تیره در پایین-چپ -- قبلاً برعکس بود و «سطح»
+        // درست روی تیره‌ترین گوشه (gold700) می‌افتاد: کنتراست ۳.۳:۱. alignItems: flex-start
+        // (= راست در RTL) عدد امتیاز را هم -- که بدون حرف فارسی dir=ltr می‌گیرد -- سمت راست نگه می‌دارد.
+        start={{ x: 1, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={{ borderRadius: radius.card, padding: spacing.lg, gap: spacing.sm, alignItems: "flex-start" }}
       >
-        <ThemedText variant="caption" style={{ color: palette.n900, opacity: 0.75 }}>
+        <ThemedText variant="caption" style={{ color: palette.n900 }}>
           امتیاز باشگاه وفاداری
         </ThemedText>
         {accountError && !account ? (
@@ -320,9 +324,9 @@ export default function HomeScreen() {
               variant="display"
               style={{ color: palette.n900, fontSize: 44, letterSpacing: -0.5, fontVariant: ["tabular-nums"] }}
             >
-              {account?.pointsBalance ?? "—"}
+              {formatNumber(account?.pointsBalance)}
             </ThemedText>
-            <ThemedText style={{ color: palette.n900, opacity: 0.75, fontFamily: "Vazirmatn-Medium", fontSize: 12.5 }}>
+            <ThemedText style={{ color: palette.n900, fontFamily: "Vazirmatn-Medium", fontSize: 12.5 }}>
               سطح: {account?.levelName ?? "—"}
             </ThemedText>
           </>

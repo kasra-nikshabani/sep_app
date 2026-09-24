@@ -6,10 +6,11 @@ import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Pill } from "@/components/Pill";
 import { ErrorState } from "@/components/ErrorState";
-import { spacing } from "@/theme";
+import { spacing, palette, statusMeta } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useProduct, useAddToCart } from "@/features/shop/api";
-import { formatRial } from "@/lib/format";
+import { describeError } from "@/lib/api";
+import { formatRial, toPersianDigits } from "@/lib/format";
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,7 +47,10 @@ export default function ProductDetailScreen() {
               // همیشه اولین Variant به سبد اضافه می‌شد، مستقل از انتخاب کاربر.
               <Pressable
                 key={v.id}
-                onPress={() => setSelectedVariantId(v.id)}
+                onPress={() => {
+                  setSelectedVariantId(v.id);
+                  addToCart.reset();
+                }}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: selected }}
                 accessibilityLabel={outOfStock ? `${label}، ناموجود` : label}
@@ -66,20 +70,28 @@ export default function ProductDetailScreen() {
             {formatRial(variant.price)}
           </ThemedText>
           <ThemedText variant="caption" muted>
-            {variant.stockQuantity > 0 ? `موجودی: ${variant.stockQuantity}` : "ناموجود"}
+            {variant.stockQuantity > 0 ? `موجودی: ${toPersianDigits(variant.stockQuantity)}` : "ناموجود"}
           </ThemedText>
           <Button
             title={addToCart.isPending ? "در حال افزودن..." : "افزودن به سبد خرید"}
             variant="gold"
             disabled={variant.stockQuantity <= 0}
             loading={addToCart.isPending}
-            onPress={() =>
-              addToCart.mutate(
-                { productVariantId: variant.id, quantity: 1 },
-                { onSuccess: () => router.push("/cart") },
-              )
-            }
+            onPress={() => addToCart.mutate({ productVariantId: variant.id, quantity: 1 })}
           />
+          {/* قبلاً بعد از افزودن، کاربر اجباراً به سبد خرید پرتاب می‌شد و خطا هم هیچ‌جا نمایش
+              داده نمی‌شد -- حالا در همین صفحه می‌ماند و خودش تصمیم می‌گیرد. */}
+          {addToCart.isSuccess && (
+            <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: 10, backgroundColor: statusMeta.success.bg }}>
+              <ThemedText>به سبد خرید اضافه شد.</ThemedText>
+              <Button title="مشاهده‌ی سبد خرید" variant="secondary" onPress={() => router.push("/cart")} />
+            </View>
+          )}
+          {addToCart.isError && (
+            <ThemedText color={palette.danger}>
+              {describeError(addToCart.error, "افزودن به سبد ممکن نشد؛ ممکن است موجودی این کالا تمام شده باشد.")}
+            </ThemedText>
+          )}
         </>
       )}
     </Screen>

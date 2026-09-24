@@ -7,7 +7,7 @@ import { spacing, palette } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useMe } from "@/features/users/api";
 import { useAuth } from "@/lib/auth";
-import { formatDate } from "@/lib/format";
+import { formatDate, toPersianDigits } from "@/lib/format";
 import { ProfileIcon, BellIcon, ReceiptIcon, TicketIcon, GiftIcon, ArrowIcon, type IconComponent } from "@/components/Icon";
 import { BrandMark } from "@/components/BrandMark";
 
@@ -70,8 +70,8 @@ export default function ProfileScreen() {
       </View>
 
       <Card style={{ gap: spacing.sm }}>
-        <Row label="موبایل" value={me?.phoneNumber ?? "—"} />
-        <Row label="کد ملی" value={me?.nationalCode ?? "—"} />
+        <Row label="موبایل" value={toPersianDigits(me?.phoneNumber)} />
+        <Row label="کد ملی" value={toPersianDigits(me?.nationalCode)} />
         <Row label="شماره عضویت" value={me?.membershipNumber ?? "—"} />
         <Row label="شهر" value={me?.city ?? "—"} />
         <Row label="تاریخ عضویت" value={formatDate(me?.joinedAt)} />

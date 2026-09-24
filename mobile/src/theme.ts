@@ -2,6 +2,8 @@
 // -- همان مرجعی که Admin Panel (Phase 14) هم از آن استفاده کرد.
 
 export const palette = {
+  // فقط متن طلایی روی زمینه‌ی روشن (≥۴.۵:۱) -- gold700 روی n50 فقط ۴.۱:۱ بود (design-system.html)
+  gold800: "#8F6808",
   gold700: "#9C7209",
   gold500: "#E8A80E",
   gold300: "#F3C765",
@@ -48,7 +50,7 @@ export const lightColors: ThemeColors = {
   accent: palette.n900,
   accentContrast: palette.n0,
   gold: palette.gold500,
-  goldText: palette.gold700,
+  goldText: palette.gold800,
 };
 
 export const darkColors: ThemeColors = {
@@ -82,5 +84,5 @@ export const statusMeta = {
   warning: { color: palette.warning, bg: palette.warningBg },
   danger: { color: palette.danger, bg: palette.dangerBg },
   info: { color: palette.info, bg: palette.infoBg },
-  gold: { color: palette.gold700, bg: "#FBF1D9" },
+  gold: { color: palette.gold800, bg: "#FBF1D9" },
 };

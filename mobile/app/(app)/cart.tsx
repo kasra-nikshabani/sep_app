@@ -4,10 +4,11 @@ import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { ErrorState } from "@/components/ErrorState";
-import { spacing } from "@/theme";
+import { spacing, palette } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useCart, useRemoveCartItem, useUpdateCartItem } from "@/features/shop/api";
-import { formatRial } from "@/lib/format";
+import { describeError } from "@/lib/api";
+import { formatRial, toPersianDigits } from "@/lib/format";
 
 export default function CartScreen() {
   const { colors } = useTheme();
@@ -16,6 +17,12 @@ export default function CartScreen() {
   const updateItem = useUpdateCartItem();
 
   const total = (data ?? []).reduce((sum, i) => sum + Number(i.lineSubtotal), 0);
+  const busy = updateItem.isPending || removeItem.isPending;
+  const mutationError = updateItem.isError
+    ? describeError(updateItem.error, "تغییر تعداد ممکن نشد؛ ممکن است موجودی کالا کافی نباشد.")
+    : removeItem.isError
+      ? describeError(removeItem.error, "حذف کالا از سبد ممکن نشد.")
+      : undefined;
 
   return (
     <Screen scroll={false}>
@@ -24,6 +31,7 @@ export default function CartScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         data={data ?? []}
         keyExtractor={(i) => i.id}
+        ListHeaderComponent={mutationError ? <ThemedText color={palette.danger}>{mutationError}</ThemedText> : null}
         ListEmptyComponent={
           isLoading ? (
             <ActivityIndicator color={colors.accent} />
@@ -38,14 +46,21 @@ export default function CartScreen() {
             <View style={{ flex: 1 }}>
               <ThemedText style={{ fontFamily: "Vazirmatn-Medium" }}>{item.productName}</ThemedText>
               <ThemedText variant="caption" muted>
-                {formatRial(item.unitPrice)} × {item.quantity}
+                {formatRial(item.unitPrice)} × {toPersianDigits(item.quantity)}
               </ThemedText>
             </View>
             <View style={{ flexDirection: "row", gap: spacing.sm, alignItems: "center" }}>
-              <Button title="−" variant="secondary" onPress={() => updateItem.mutate({ itemId: item.id, quantity: Math.max(0, item.quantity - 1) })} />
-              <ThemedText>{item.quantity}</ThemedText>
-              <Button title="+" variant="secondary" onPress={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity + 1 })} />
-              <Button title="حذف" variant="ghost" onPress={() => removeItem.mutate(item.id)} />
+              {/* قبلاً «−» تعداد ۱ را به صفر (درخواست نامعتبر) می‌رساند؛ حذف فقط از دکمه‌ی «حذف».
+                  در حین هر تغییر، همه‌ی دکمه‌ها غیرفعال‌اند تا لمس پشت‌سرهم دوبار ثبت نشود. */}
+              <Button
+                title="−"
+                variant="secondary"
+                disabled={busy || item.quantity <= 1}
+                onPress={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity - 1 })}
+              />
+              <ThemedText>{toPersianDigits(item.quantity)}</ThemedText>
+              <Button title="+" variant="secondary" disabled={busy} onPress={() => updateItem.mutate({ itemId: item.id, quantity: item.quantity + 1 })} />
+              <Button title="حذف" variant="ghost" disabled={busy} onPress={() => removeItem.mutate(item.id)} />
             </View>
           </Card>
         )}

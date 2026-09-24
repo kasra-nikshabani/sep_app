@@ -46,3 +46,13 @@ export function useApi() {
 
   return { apiFetch };
 }
+
+// متن خامِ ApiError همان بدنه‌ی پاسخ سرور است (JSON/Stack انگلیسی) -- هرگز مستقیم به کاربر
+// نشان داده نمی‌شود. خطای 4xx یعنی درخواست در این وضعیت ممکن نیست (پیام وابسته به صفحه)؛
+// بقیه (5xx یا قطع شبکه که fetch آن را TypeError پرتاب می‌کند) یعنی مشکل ارتباط.
+export function describeError(error: unknown, rejectedMessage: string): string {
+  if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+    return rejectedMessage;
+  }
+  return "ارتباط با سرور برقرار نشد. لطفاً دوباره تلاش کنید.";
+}

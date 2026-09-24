@@ -24,6 +24,7 @@
 
   :root {
     /* هویت رسمی باشگاه — برگرفته از نشان (Crest) فولاد مبارکه سپاهان: مشکی، طلایی، سفید */
+    --gold-800: #8F6808; /* فقط متن طلایی روی زمینه‌ی روشن -- gold-700 روی Neutral 50 فقط ۴.۱:۱ بود (زیر حداقل ۴.۵:۱ WCAG AA) */
     --gold-700: #9C7209;
     --gold-500: #E8A80E;
     --gold-300: #F3C765;
@@ -57,7 +58,7 @@
     --color-accent-hover: #000000;
     --color-accent-contrast: var(--neutral-0);
     --color-gold: var(--gold-500);
-    --color-gold-text: var(--gold-700);
+    --color-gold-text: var(--gold-800);
     --shadow-card: 0 1px 2px rgba(20,17,10,0.07), 0 4px 16px rgba(20,17,10,0.07);
   }
 
@@ -111,7 +112,7 @@
     --color-accent-hover: #000000;
     --color-accent-contrast: var(--neutral-0);
     --color-gold: var(--gold-500);
-    --color-gold-text: var(--gold-700);
+    --color-gold-text: var(--gold-800);
     --shadow-card: 0 1px 2px rgba(20,17,10,0.07), 0 4px 16px rgba(20,17,10,0.07);
   }
 
@@ -398,7 +399,8 @@
     <div class="swatch-grid">
       <div class="swatch"><div class="fill" style="background:var(--neutral-900)"></div><div class="meta"><div class="name">مشکی هویتی</div><div class="hex">#14110A</div><div class="usage">دکمه اصلی (روشن)، هدر، نشان باشگاه</div></div></div>
       <div class="swatch"><div class="fill" style="background:var(--gold-500)"></div><div class="meta"><div class="name">طلایی رسمی</div><div class="hex">#E8A80E</div><div class="usage">دکمه اصلی (تیره)، VIP، وفاداری</div></div></div>
-      <div class="swatch"><div class="fill" style="background:var(--gold-700)"></div><div class="meta"><div class="name">طلایی تیره</div><div class="hex">#9C7209</div><div class="usage">متن/لینک طلایی روی زمینه‌ی روشن</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--gold-700)"></div><div class="meta"><div class="name">طلایی تیره</div><div class="hex">#9C7209</div><div class="usage">انتهای گرادیان طلایی، سطوح بزرگ</div></div></div>
+      <div class="swatch"><div class="fill" style="background:var(--gold-800)"></div><div class="meta"><div class="name">طلایی متن</div><div class="hex">#8F6808</div><div class="usage">متن/لینک طلایی روی زمینه‌ی روشن (≥۴.۵:۱)</div></div></div>
       <div class="swatch"><div class="fill" style="background:var(--neutral-50);border-bottom:1px solid var(--color-border)"></div><div class="meta"><div class="name">Neutral 50</div><div class="hex">#FAF8F2</div><div class="usage">پس‌زمینه‌ی روشن</div></div></div>
       <div class="swatch"><div class="fill" style="background:var(--neutral-400)"></div><div class="meta"><div class="name">Neutral 400</div><div class="hex">#AB9968</div><div class="usage">متن کم‌رنگ، حاشیه</div></div></div>
       <div class="swatch"><div class="fill" style="background:var(--neutral-900)"></div><div class="meta"><div class="name">Neutral 900</div><div class="hex">#14110A</div><div class="usage">پس‌زمینه‌ی تیره، متن اصلی</div></div></div>

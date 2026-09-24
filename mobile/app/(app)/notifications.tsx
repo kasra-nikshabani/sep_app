@@ -42,7 +42,7 @@ export default function NotificationsScreen() {
         const granted =
           Platform.OS === "ios" ? permission.ios?.status === Notifications.IosAuthorizationStatus.AUTHORIZED : permission.granted;
         if (!granted) {
-          setError("اجازه‌ی نمایش اعلان داده نشد.");
+          setError("اجازه‌ی نمایش اعلان داده نشد. می‌توانید از تنظیمات گوشی آن را فعال کنید.");
           return;
         }
         const devicePushToken = await Notifications.getDevicePushTokenAsync();
@@ -50,7 +50,8 @@ export default function NotificationsScreen() {
         await register.mutateAsync({ token: devicePushToken.data, platform });
         await setItem(STORAGE_KEY, devicePushToken.data);
       } catch {
-        setError("دریافت Token از دستگاه ناموفق بود -- این قابلیت فقط در Build واقعی Native کار می‌کند، نه Expo Go.");
+        // در Expo Go (نه Build واقعی Native) getDevicePushTokenAsync همیشه شکست می‌خورد (ADR-0018).
+        setError("فعال‌سازی اعلان‌ها ممکن نشد. لطفاً دوباره تلاش کنید.");
         return;
       }
     } else {
@@ -70,7 +71,7 @@ export default function NotificationsScreen() {
         <>
           <Card>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <ThemedText style={{ fontFamily: "Vazirmatn-Medium" }}>دریافت اعلان Push</ThemedText>
+              <ThemedText style={{ fontFamily: "Vazirmatn-Medium" }}>دریافت اعلان‌ها</ThemedText>
               <Switch value={enabled} onValueChange={handleToggle} disabled={!loaded || register.isPending || unregister.isPending} />
             </View>
           </Card>
@@ -79,17 +80,18 @@ export default function NotificationsScreen() {
               {error}
             </ThemedText>
           ) : (
+            // ارسال از طریق FCM (Firebase) طبق ADR-0018 -- دریافت واقعی روی دستگاه هنوز تست زنده نشده.
+            // متن قبلی («این نسخه فقط در مرورگر قابل اجراست») دقیقاً روی همین مسیر Native نمایش داده می‌شد.
             <ThemedText variant="caption" muted>
-              ارسال واقعی از طریق FCM (Firebase) -- طبق ADR-0018. چون این نسخه فقط در مرورگر (بدون Build واقعی) قابل
-              اجراست، دریافت واقعی Push در این محیط قابل تست نبود.
+              با فعال کردن این گزینه، خبرها، نتایج و اطلاع‌رسانی‌های باشگاه را به‌صورت اعلان روی گوشی دریافت می‌کنید.
             </ThemedText>
           )}
         </>
       ) : (
         <Card>
+          {/* طبق مستندات Expo، getDevicePushTokenAsync روی Web پیاده نشده (ADR-0018). */}
           <ThemedText variant="caption" muted>
-            دریافت اعلان Push فقط در نسخه‌ی Native (Build واقعی iOS/Android) در دسترس است -- طبق مستندات رسمی Expo،
-            دریافت Token دستگاه در نسخه‌ی Web اصلاً پیاده نشده (ADR-0018).
+            دریافت اعلان فقط در اپ اندروید و iOS سپاهان امکان‌پذیر است.
           </ThemedText>
         </Card>
       )}
