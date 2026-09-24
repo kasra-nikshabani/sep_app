@@ -104,7 +104,7 @@ function isFullySoon(item: ServiceItem): boolean {
 
 function ServiceGrid({ items, onOpenMenu }: { items: ServiceItem[]; onOpenMenu: (item: ServiceItem & { kind: "menu" }) => void }) {
   return (
-    <View style={{ flexDirection: "row-reverse", flexWrap: "wrap", gap: spacing.md, rowGap: spacing.lg }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md, rowGap: spacing.lg }}>
       {items.map((item) => {
         const soon = isFullySoon(item);
         const tileContent = (
@@ -185,7 +185,7 @@ function LeagueTable() {
   const { colors } = useTheme();
   return (
     <View style={{ gap: spacing.md }}>
-      <View style={{ flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center" }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <ThemedText variant="h2">جدول لیگ برتر</ThemedText>
         <ThemedText variant="caption" muted>
           هفته ۳
@@ -195,7 +195,7 @@ function LeagueTable() {
       <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
         <View
           style={{
-            flexDirection: "row-reverse",
+            flexDirection: "row",
             paddingVertical: spacing.sm,
             paddingHorizontal: spacing.md,
             backgroundColor: colors.bg,
@@ -218,7 +218,7 @@ function LeagueTable() {
           <View
             key={row.team}
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: "row",
               alignItems: "center",
               paddingVertical: spacing.sm,
               paddingHorizontal: spacing.md,
@@ -259,7 +259,7 @@ function LeagueTable() {
 export default function HomeScreen() {
   const { colors } = useTheme();
   const { data: me } = useMe();
-  const { data: account } = useLoyaltyAccount();
+  const { data: account, isError: accountError, refetch: refetchAccount } = useLoyaltyAccount();
   const { session } = useAuth();
   const [activeMenu, setActiveMenu] = useState<(ServiceItem & { kind: "menu" }) | null>(null);
   const displayName = me?.displayName ?? session?.displayName ?? "—";
@@ -268,7 +268,7 @@ export default function HomeScreen() {
     <Screen>
       <BrandMark />
 
-      <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: spacing.md }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
         <View
           style={{
             width: 60,
@@ -303,15 +303,30 @@ export default function HomeScreen() {
         <ThemedText variant="caption" style={{ color: palette.n900, opacity: 0.75 }}>
           امتیاز باشگاه وفاداری
         </ThemedText>
-        <ThemedText
-          variant="display"
-          style={{ color: palette.n900, fontSize: 44, letterSpacing: -0.5, fontVariant: ["tabular-nums"] }}
-        >
-          {account?.pointsBalance ?? "—"}
-        </ThemedText>
-        <ThemedText style={{ color: palette.n900, opacity: 0.75, fontFamily: "Vazirmatn-Medium", fontSize: 12.5 }}>
-          سطح: {account?.levelName ?? "—"}
-        </ThemedText>
+        {accountError && !account ? (
+          <View style={{ gap: spacing.sm, alignItems: "flex-start" }}>
+            <ThemedText style={{ color: palette.n900 }}>امتیاز شما بارگذاری نشد.</ThemedText>
+            <Pressable
+              onPress={() => refetchAccount()}
+              accessibilityRole="button"
+              style={{ borderWidth: 1, borderColor: palette.n900, borderRadius: radius.pill, paddingVertical: 6, paddingHorizontal: spacing.lg }}
+            >
+              <ThemedText style={{ color: palette.n900, fontFamily: "Vazirmatn-Medium" }}>تلاش مجدد</ThemedText>
+            </Pressable>
+          </View>
+        ) : (
+          <>
+            <ThemedText
+              variant="display"
+              style={{ color: palette.n900, fontSize: 44, letterSpacing: -0.5, fontVariant: ["tabular-nums"] }}
+            >
+              {account?.pointsBalance ?? "—"}
+            </ThemedText>
+            <ThemedText style={{ color: palette.n900, opacity: 0.75, fontFamily: "Vazirmatn-Medium", fontSize: 12.5 }}>
+              سطح: {account?.levelName ?? "—"}
+            </ThemedText>
+          </>
+        )}
       </LinearGradient>
 
       <View style={{ gap: spacing.md }}>

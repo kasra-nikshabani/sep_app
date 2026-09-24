@@ -3,6 +3,7 @@ import { Link } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { BrandMark } from "@/components/BrandMark";
+import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useArticles } from "@/features/news/api";
@@ -10,7 +11,7 @@ import { formatDate } from "@/lib/format";
 
 export default function NewsScreen() {
   const { colors } = useTheme();
-  const { data, isLoading } = useArticles();
+  const { data, isLoading, isError, refetch } = useArticles();
 
   return (
     <Screen scroll={false}>
@@ -26,12 +27,18 @@ export default function NewsScreen() {
         }
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
         ListEmptyComponent={
-          isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>خبری موجود نیست</ThemedText>
+          isLoading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : isError ? (
+            <ErrorState onRetry={refetch} />
+          ) : (
+            <ThemedText muted>خبری موجود نیست</ThemedText>
+          )
         }
         renderItem={({ item }) => (
           <Link href={`/news-detail/${item.slug}`} asChild>
             <Pressable>
-              <Card style={{ flexDirection: "row-reverse", alignItems: "center" }}>
+              <Card style={{ flexDirection: "row", alignItems: "center" }}>
                 {item.coverImageUrl ? (
                   <Image source={{ uri: item.coverImageUrl }} style={{ width: 64, height: 64, borderRadius: 10 }} />
                 ) : null}

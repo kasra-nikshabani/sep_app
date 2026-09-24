@@ -4,6 +4,7 @@ import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { Pill } from "@/components/Pill";
+import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useLoyaltyAccount, useLoyaltyTransactions, useRewards, useRedeemReward, useMyRedemptions } from "@/features/loyalty/api";
@@ -17,11 +18,27 @@ const redemptionStatusMeta = {
 
 export default function LoyaltyScreen() {
   const { colors } = useTheme();
-  const { data: account } = useLoyaltyAccount();
-  const { data: transactions } = useLoyaltyTransactions();
-  const { data: rewards, isLoading: rewardsLoading } = useRewards();
-  const { data: redemptions } = useMyRedemptions();
+  const accountQuery = useLoyaltyAccount();
+  const transactionsQuery = useLoyaltyTransactions();
+  const rewardsQuery = useRewards();
+  const redemptionsQuery = useMyRedemptions();
+  const { data: account } = accountQuery;
+  const { data: transactions } = transactionsQuery;
+  const { data: rewards, isLoading: rewardsLoading } = rewardsQuery;
+  const { data: redemptions } = redemptionsQuery;
   const redeem = useRedeemReward();
+
+  // هر چهار بخش این صفحه به هم وابسته‌اند (موجودی ↔ جوایز قابل دریافت) -- با شکست هر کدام،
+  // یک خطای واحد به‌جای نمایش «ثبت نشده»های گمراه‌کننده در بقیه‌ی بخش‌ها.
+  const failedQueries = [accountQuery, transactionsQuery, rewardsQuery, redemptionsQuery].filter((q) => q.isError && q.data === undefined);
+  if (failedQueries.length > 0) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ headerShown: true, title: "باشگاه امتیاز" }} />
+        <ErrorState onRetry={() => failedQueries.forEach((q) => q.refetch())} />
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -45,7 +62,7 @@ export default function LoyaltyScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={rewardsLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>جایزه‌ای موجود نیست</ThemedText>}
         renderItem={({ item }) => (
-          <Card style={{ flexDirection: "row-reverse", alignItems: "center", justifyContent: "space-between" }}>
+          <Card style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
             <View style={{ flex: 1 }}>
               <ThemedText style={{ fontFamily: "Vazirmatn-Medium" }}>{item.name}</ThemedText>
               <ThemedText variant="caption" muted>
@@ -71,7 +88,7 @@ export default function LoyaltyScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={<ThemedText muted>درخواستی ثبت نشده</ThemedText>}
         renderItem={({ item }) => (
-          <Card style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+          <Card style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <ThemedText>{item.rewardName}</ThemedText>
             <Pill label={redemptionStatusMeta[item.status].label} tone={redemptionStatusMeta[item.status].tone} />
           </Card>
@@ -86,7 +103,7 @@ export default function LoyaltyScreen() {
         ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
         ListEmptyComponent={<ThemedText muted>تراکنشی ثبت نشده</ThemedText>}
         renderItem={({ item }) => (
-          <Card style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+          <Card style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <View>
               <ThemedText variant="caption">{item.description ?? item.sourceType ?? item.type}</ThemedText>
               <ThemedText variant="caption" muted>

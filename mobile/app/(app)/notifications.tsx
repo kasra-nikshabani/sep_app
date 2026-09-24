@@ -69,7 +69,7 @@ export default function NotificationsScreen() {
       {PUSH_SUPPORTED ? (
         <>
           <Card>
-            <View style={{ flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <ThemedText style={{ fontFamily: "Vazirmatn-Medium" }}>دریافت اعلان Push</ThemedText>
               <Switch value={enabled} onValueChange={handleToggle} disabled={!loaded || register.isPending || unregister.isPending} />
             </View>

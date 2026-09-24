@@ -55,7 +55,7 @@ export function ServiceMenuSheet({
             }}
           />
 
-          <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: spacing.md }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.md }}>
             <LinearGradient
               colors={[palette.gold300, palette.gold500, palette.gold700]}
               start={{ x: 0, y: 0 }}
@@ -81,7 +81,7 @@ export function ServiceMenuSheet({
                 <Pressable
                   onPress={onClose}
                   style={{
-                    flexDirection: "row-reverse",
+                    flexDirection: "row",
                     alignItems: "center",
                     justifyContent: "space-between",
                     paddingVertical: spacing.md,

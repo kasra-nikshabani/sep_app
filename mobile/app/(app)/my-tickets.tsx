@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { Pill } from "@/components/Pill";
+import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useMyTickets } from "@/features/tickets/api";
@@ -16,7 +17,7 @@ const statusMeta = {
 
 export default function MyTicketsScreen() {
   const { colors } = useTheme();
-  const { data, isLoading } = useMyTickets();
+  const { data, isLoading, isError, refetch } = useMyTickets();
 
   return (
     <Screen scroll={false}>
@@ -25,7 +26,15 @@ export default function MyTicketsScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         data={data ?? []}
         keyExtractor={(t) => t.id}
-        ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>بلیطی ندارید</ThemedText>}
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : isError ? (
+            <ErrorState onRetry={refetch} />
+          ) : (
+            <ThemedText muted>بلیطی ندارید</ThemedText>
+          )
+        }
         renderItem={({ item }) => (
           <Card>
             <ThemedText variant="caption" color={colors.goldText}>

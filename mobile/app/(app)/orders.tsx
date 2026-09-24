@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { Pill } from "@/components/Pill";
+import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useMyOrders } from "@/features/shop/api";
@@ -21,7 +22,7 @@ const statusMeta: Record<string, { label: string; tone: "success" | "warning" | 
 
 export default function OrdersScreen() {
   const { colors } = useTheme();
-  const { data, isLoading } = useMyOrders();
+  const { data, isLoading, isError, refetch } = useMyOrders();
 
   return (
     <Screen scroll={false}>
@@ -30,10 +31,18 @@ export default function OrdersScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         data={data ?? []}
         keyExtractor={(o) => o.id}
-        ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>سفارشی ثبت نشده</ThemedText>}
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : isError ? (
+            <ErrorState onRetry={refetch} />
+          ) : (
+            <ThemedText muted>سفارشی ثبت نشده</ThemedText>
+          )
+        }
         renderItem={({ item }) => (
           <Card>
-            <View style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
               <ThemedText variant="caption" muted>
                 {formatDate(item.createdAt)}
               </ThemedText>

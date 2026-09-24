@@ -4,6 +4,7 @@ import { useLocalSearchParams, Stack, router } from "expo-router";
 import { Screen } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { ErrorState } from "@/components/ErrorState";
 import { spacing, radius } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useEventSeats, useReserveSeat, usePayReservation, useCancelReservation, type EventSeat } from "@/features/tickets/api";
@@ -13,7 +14,7 @@ import { formatRial } from "@/lib/format";
 export default function EventSeatsScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const { colors } = useTheme();
-  const { data: seats, isLoading } = useEventSeats(eventId);
+  const { data: seats, isLoading, isError, refetch } = useEventSeats(eventId);
   const reserveSeat = useReserveSeat();
   const cancelReservation = useCancelReservation();
   const payReservation = usePayReservation();
@@ -74,13 +75,21 @@ export default function EventSeatsScreen() {
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.sm }}
         data={seats ?? []}
         keyExtractor={(s) => s.id}
-        ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>صندلی موجود نیست</ThemedText>}
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : isError ? (
+            <ErrorState onRetry={refetch} />
+          ) : (
+            <ThemedText muted>صندلی موجود نیست</ThemedText>
+          )
+        }
         renderItem={({ item }) => (
           <Pressable
             disabled={item.status !== "available"}
             onPress={() => handleReserve(item)}
             style={{
-              flexDirection: "row-reverse",
+              flexDirection: "row",
               justifyContent: "space-between",
               alignItems: "center",
               padding: spacing.md,

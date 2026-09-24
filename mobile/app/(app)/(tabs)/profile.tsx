@@ -13,7 +13,7 @@ import { BrandMark } from "@/components/BrandMark";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
       <ThemedText muted>{label}</ThemedText>
       <ThemedText>{value}</ThemedText>
     </View>
@@ -26,13 +26,13 @@ function AccountLink({ href, label, Icon }: { href: string; label: string; Icon:
     <Link href={href as never} asChild>
       <Pressable
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           paddingVertical: spacing.md,
         }}
       >
-        <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
           <Icon color={palette.n900} size={18} />
           <ThemedText>{label}</ThemedText>
         </View>
