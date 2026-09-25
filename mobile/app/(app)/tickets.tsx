@@ -1,7 +1,8 @@
 import { View, FlatList, Pressable, ActivityIndicator } from "react-native";
-import { Link } from "expo-router";
+import { Link, Stack } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
+import { ErrorState } from "@/components/ErrorState";
 import { TicketIcon } from "@/components/Icon";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
@@ -10,26 +11,37 @@ import { formatDateTime, formatRial } from "@/lib/format";
 
 export default function TicketsScreen() {
   const { colors } = useTheme();
-  const { data, isLoading } = useEvents();
+  const { data, isLoading, isError, refetch } = useEvents();
 
   return (
     <Screen scroll={false}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: "بلیط تئاتر",
+          headerRight: () => (
+            <Link href="/my-tickets" asChild>
+              <Pressable accessibilityRole="button" accessibilityLabel="بلیط‌های من" hitSlop={8} style={{ padding: spacing.sm }}>
+                <TicketIcon color={colors.accent} />
+              </Pressable>
+            </Link>
+          ),
+        }}
+      />
       <FlatList
         contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
         data={data ?? []}
         keyExtractor={(e) => e.id}
-        ListHeaderComponent={
-          <View style={{ flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.md }}>
-            <ThemedText variant="h1">بلیط تئاتر</ThemedText>
-            <Link href="/my-tickets" asChild>
-              <Pressable style={{ padding: spacing.sm }}>
-                <TicketIcon color={colors.accent} />
-              </Pressable>
-            </Link>
-          </View>
-        }
         ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-        ListEmptyComponent={isLoading ? <ActivityIndicator color={colors.accent} /> : <ThemedText muted>رویدادی موجود نیست</ThemedText>}
+        ListEmptyComponent={
+          isLoading ? (
+            <ActivityIndicator color={colors.accent} />
+          ) : isError ? (
+            <ErrorState onRetry={refetch} />
+          ) : (
+            <ThemedText muted>رویدادی موجود نیست</ThemedText>
+          )
+        }
         renderItem={({ item }) => (
           <Link href={`/event-seats/${item.id}`} asChild>
             <Pressable>

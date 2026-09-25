@@ -7,13 +7,13 @@ import { spacing, palette } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
 import { useMe } from "@/features/users/api";
 import { useAuth } from "@/lib/auth";
-import { formatDate } from "@/lib/format";
+import { formatDate, toPersianDigits } from "@/lib/format";
 import { ProfileIcon, BellIcon, ReceiptIcon, TicketIcon, GiftIcon, ArrowIcon, type IconComponent } from "@/components/Icon";
 import { BrandMark } from "@/components/BrandMark";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <View style={{ flexDirection: "row-reverse", justifyContent: "space-between" }}>
+    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
       <ThemedText muted>{label}</ThemedText>
       <ThemedText>{value}</ThemedText>
     </View>
@@ -26,13 +26,13 @@ function AccountLink({ href, label, Icon }: { href: string; label: string; Icon:
     <Link href={href as never} asChild>
       <Pressable
         style={{
-          flexDirection: "row-reverse",
+          flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           paddingVertical: spacing.md,
         }}
       >
-        <View style={{ flexDirection: "row-reverse", alignItems: "center", gap: spacing.sm }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: spacing.sm }}>
           <Icon color={palette.n900} size={18} />
           <ThemedText>{label}</ThemedText>
         </View>
@@ -70,8 +70,8 @@ export default function ProfileScreen() {
       </View>
 
       <Card style={{ gap: spacing.sm }}>
-        <Row label="موبایل" value={me?.phoneNumber ?? "—"} />
-        <Row label="کد ملی" value={me?.nationalCode ?? "—"} />
+        <Row label="موبایل" value={toPersianDigits(me?.phoneNumber)} />
+        <Row label="کد ملی" value={toPersianDigits(me?.nationalCode)} />
         <Row label="شماره عضویت" value={me?.membershipNumber ?? "—"} />
         <Row label="شهر" value={me?.city ?? "—"} />
         <Row label="تاریخ عضویت" value={formatDate(me?.joinedAt)} />

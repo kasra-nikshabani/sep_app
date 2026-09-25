@@ -26,7 +26,7 @@ export default function AuthCallbackScreen() {
     if (!code || !isDiscoveryReady) return;
     completeExchange(code).then((ok) => {
       router.replace(ok ? "/" : "/login");
-      if (!ok) setError("ورود ناموفق بود -- دوباره تلاش کنید");
+      if (!ok) setError("ورود ناموفق بود. دوباره تلاش کنید.");
     });
   }, [code, completeExchange, isDiscoveryReady]);
 

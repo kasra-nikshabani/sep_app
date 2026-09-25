@@ -7,7 +7,7 @@ export function Pill({ label, tone = "info" }: { label: string; tone?: keyof typ
   return (
     <View
       style={{
-        flexDirection: "row-reverse",
+        flexDirection: "row",
         alignItems: "center",
         gap: 6,
         alignSelf: "flex-start",
