@@ -24,6 +24,12 @@ export type EventSeat = {
 export type Reservation = { id: string; eventSeatId: string; expiresAt: string };
 export type Ticket = { id: string; ticketNumber: string; status: "valid" | "used" | "refunded"; issuedAt: string };
 
+export const TICKET_STATUS: Record<Ticket["status"], { label: string; tone: "success" | "info" | "danger" }> = {
+  valid: { label: "معتبر", tone: "success" },
+  used: { label: "استفاده‌شده", tone: "info" },
+  refunded: { label: "استردادشده", tone: "danger" },
+};
+
 export function useEvents() {
   const { apiFetch } = useApi();
   return useQuery({ queryKey: ["tickets", "events"], queryFn: () => apiFetch<EventItem[]>("/api/v1/ticketing/events") });

@@ -22,7 +22,7 @@ cp .env.example .env
 # مقادیر changeme-local-only را در .env با مقادیر واقعی (فقط برای Dev) جایگزین کنید
 docker-compose --env-file .env up -d
 docker-compose ps
-./keycloak/fix-user-profile.sh    # اجباری — بدون این هیچ کاربری نمی‌تواند وارد شود؛ دلیل در docs/authentication/keycloak-realm.md
+./keycloak/fix-user-profile.sh    # فقط برای Realm از قبل موجود (Import تازه پروفایل کاربر را خودش می‌آورد)؛ بی‌اثر و امن در غیر این صورت — docs/authentication/keycloak-realm.md
 ```
 
 ⚠️ اگر مقدار رمزی در `.env` کاراکتر `$` یا `` ` `` یا `"` داشته باشد (مثلاً یک رمز پیچیده‌ی Admin)، آن را داخل تک‌کوتیشن بگذارید (`KEYCLOAK_ADMIN_PASSWORD='...'`) — وگرنه اگر جایی این فایل با `source` خوانده شود، آن کاراکترها به‌عنوان کد Shell تفسیر می‌شوند و رمز را بی‌صدا خراب می‌کنند (در Phase 6 دقیقاً همین اتفاق افتاد).

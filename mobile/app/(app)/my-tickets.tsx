@@ -6,14 +6,8 @@ import { Pill } from "@/components/Pill";
 import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
-import { useMyTickets } from "@/features/tickets/api";
+import { useMyTickets, TICKET_STATUS } from "@/features/tickets/api";
 import { formatDateTime } from "@/lib/format";
-
-const statusMeta = {
-  valid: { label: "معتبر", tone: "success" as const },
-  used: { label: "استفاده‌شده", tone: "info" as const },
-  refunded: { label: "استردادشده", tone: "danger" as const },
-};
 
 export default function MyTicketsScreen() {
   const { colors } = useTheme();
@@ -40,7 +34,7 @@ export default function MyTicketsScreen() {
             <ThemedText variant="caption" color={colors.goldText}>
               کد بلیط: {item.ticketNumber}
             </ThemedText>
-            <Pill label={statusMeta[item.status].label} tone={statusMeta[item.status].tone} />
+            <Pill label={TICKET_STATUS[item.status].label} tone={TICKET_STATUS[item.status].tone} />
             <ThemedText variant="caption" muted>
               صادرشده: {formatDateTime(item.issuedAt)}
             </ThemedText>

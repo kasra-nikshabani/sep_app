@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/api";
 
 export type Article = {
@@ -20,11 +20,17 @@ export type ArticleDetail = Article & {
   tags: { id: string; name: string; slug: string }[];
 };
 
+export const NEWS_PAGE_SIZE = 20;
+
+// اخبار هزاران مورد است (ورود خودکار از سایت باشگاه)؛ صفحه‌به‌صفحه می‌خوانیم.
 export function useArticles() {
   const { apiFetch } = useApi();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["news", "articles"],
-    queryFn: () => apiFetch<Article[]>("/api/v1/news/articles"),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      apiFetch<Article[]>(`/api/v1/news/articles?page=${pageParam}&size=${NEWS_PAGE_SIZE}`),
+    getNextPageParam: (lastPage, pages) => (lastPage.length < NEWS_PAGE_SIZE ? undefined : pages.length),
   });
 }
 

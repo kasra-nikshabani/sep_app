@@ -46,7 +46,18 @@ public class UserProvisioningService {
                         return jitInsertHelper.insertUser(jwt, keycloakSubject);
                     } catch (DataIntegrityViolationException raceLost) {
                         jitRaceMetrics.recordConflict("app_user");
-                        return appUserRepository.findByKeycloakSubjectAndDeletedAtIsNull(keycloakSubject)
+                        AppUser sameSubject = appUserRepository.findByKeycloakSubjectAndDeletedAtIsNull(keycloakSubject)
+                                .orElse(null);
+                        if (sameSubject != null) {
+                            return sameSubject;
+                        }
+                        if (!isNationalCodeConflict(raceLost)) {
+                            throw raceLost;
+                        }
+                        String nationalCode = jwt.getClaimAsString("national_code");
+                        String name = jwt.getClaimAsString("name");
+                        return appUserRepository.findByNationalCodeAndDeletedAtIsNull(nationalCode)
+                                .map(existing -> jitInsertHelper.rebindKeycloakSubject(existing.getId(), keycloakSubject, name))
                                 .orElseThrow(() -> raceLost);
                     }
                 });
@@ -63,5 +74,10 @@ public class UserProvisioningService {
                 });
 
         return appUser;
+    }
+
+    private static boolean isNationalCodeConflict(DataIntegrityViolationException error) {
+        String message = error.getMostSpecificCause().getMessage();
+        return message != null && message.contains("uq_app_user_national_code");
     }
 }

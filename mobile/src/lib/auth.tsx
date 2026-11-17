@@ -51,7 +51,8 @@ function sessionFromAccessToken(accessToken: string): Session {
   return {
     accessToken,
     roles: realmAccess?.roles ?? [],
-    displayName: (payload.name as string) ?? (payload.preferred_username as string) ?? null,
+    // preferred_username همان کد ملی است (ADR-0024)؛ نباید جای نام نمایش داده شود.
+    displayName: (payload.name as string) ?? null,
   };
 }
 

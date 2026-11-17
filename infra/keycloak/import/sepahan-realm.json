@@ -718,7 +718,7 @@
           "protocolMapper": "oidc-usermodel-attribute-mapper",
           "consentRequired": false,
           "config": {
-            "user.attribute": "national_code",
+            "user.attribute": "username",
             "claim.name": "national_code",
             "jsonType.label": "String",
             "id.token.claim": "true",
@@ -842,15 +842,23 @@
     },
     {
       "clientId": "django-ticketing",
-      "name": "Django Ticketing (Legacy — ticket.sepahansc)",
-      "description": "فقط اعتبارسنجی JWT در برابر JWKS — بدون جریان OIDC کامل. bearerOnly طبق ADR-0004",
+      "name": "Django Ticketing (ticket.sepahansc)",
+      "description": "دکمه‌ی «ورود با Fan ID» سایت بلیط -- Authorization Code + PKCE، Confidential. حساب سایت فقط بعد از یک OTP متصل می‌شود (accounts/fanid_views.py در ریپوی سایت بلیط). مسیر Bearer اپ از این Client استفاده نمی‌کند.",
       "protocol": "openid-connect",
       "publicClient": false,
-      "bearerOnly": true,
-      "standardFlowEnabled": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8000/accounts/fanid/callback/",
+        "https://ticket.sepahansc.com/accounts/fanid/callback/"
+      ],
+      "webOrigins": [],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "defaultClientScopes": [
         "web-origins",
         "acr",
@@ -876,7 +884,7 @@
         "subComponents": {},
         "config": {
           "kc.user.profile.config": [
-            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"${username}\",\"validations\":{\"length\":{\"min\":3,\"max\":255},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"national_code\",\"displayName\":\"کد ملی\",\"validations\":{\"pattern\":{\"pattern\":\"^[0-9]{10}$\",\"error-message\":\"کد ملی باید دقیقاً ۱۰ رقم باشد\"}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"phone_number\",\"displayName\":\"شماره تلفن\",\"validations\":{\"pattern\":{\"pattern\":\"^09[0-9]{9}$\",\"error-message\":\"شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد\"}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
+            "{\"attributes\":[{\"name\":\"username\",\"displayName\":\"کد ملی\",\"validations\":{\"pattern\":{\"pattern\":\"^[0-9]{10}$\",\"error-message\":\"کد ملی باید دقیقاً ۱۰ رقم باشد\"},\"username-prohibited-characters\":{},\"up-username-not-idn-homograph\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"email\",\"displayName\":\"${email}\",\"validations\":{\"email\":{},\"length\":{\"max\":255}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"firstName\",\"displayName\":\"${firstName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"lastName\",\"displayName\":\"${lastName}\",\"validations\":{\"length\":{\"max\":255},\"person-name-prohibited-characters\":{}},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false},{\"name\":\"phone_number\",\"displayName\":\"شماره تلفن\",\"validations\":{\"pattern\":{\"pattern\":\"^09[0-9]{9}$\",\"error-message\":\"شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد\"}},\"required\":{\"roles\":[\"user\"]},\"permissions\":{\"view\":[\"admin\",\"user\"],\"edit\":[\"admin\",\"user\"]},\"multivalued\":false}],\"groups\":[{\"name\":\"user-metadata\",\"displayHeader\":\"User metadata\",\"displayDescription\":\"Attributes, which refer to user metadata\"}]}"
           ]
         }
       }

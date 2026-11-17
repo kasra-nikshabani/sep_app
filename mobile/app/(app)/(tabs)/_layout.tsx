@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/hooks/useTheme";
-import { HomeIcon, NewsIcon, ProfileIcon } from "@/components/Icon";
+import { HomeIcon, HistoryIcon, ProfileIcon } from "@/components/Icon";
 
 // ارتفاع پیش‌فرض Expo Router (۴۹) برای آیکن ۲۸ + برچسب Vazirmatn کافی نبود -- برچسب‌ها
 // روی گوشی به ارتفاع صفر فشرده و کاملاً نامرئی می‌شدند (فقط روی تبلت که برچسب کنار آیکن
@@ -10,8 +10,8 @@ const TAB_BAR_CONTENT_HEIGHT = 64;
 
 /**
  * از قبل شامل بلیط/فروشگاه/کیف‌پول هم بود -- طبق درخواست کارفرما به سه مقصد اصلی
- * (خانه/اخبار/حساب کاربری) محدود شد؛ خودِ صفحات بلیط و فروشگاه حذف نشدند، فقط دیگر
- * Tab جدا نیستند -- از گرید خدمات صفحه‌ی خانه در دسترسند (همان مسیر/URL قبلی).
+ * (خانه/سوابق/حساب کاربری) محدود شد؛ خودِ صفحات بلیط، فروشگاه و اخبار حذف نشدند، فقط دیگر
+ * Tab جدا نیستند -- از خدمات صفحه‌ی خانه در دسترسند (همان مسیر/URL قبلی).
  *
  * این دو صفحه قبلاً به‌صورت Tab پنهان (href:null) همین‌جا مانده بودند؛ نتیجه: ورود از
  * خانه نه دکمه‌ی بازگشت داشت نه Tab فعال (کاربر گیر می‌افتاد). حالا مثل سبد خرید/سفارش‌ها
@@ -44,7 +44,10 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: "خانه", tabBarIcon: ({ color }) => <HomeIcon color={color as string} size={28} /> }} />
-      <Tabs.Screen name="news" options={{ title: "اخبار", tabBarIcon: ({ color }) => <NewsIcon color={color as string} size={28} /> }} />
+      <Tabs.Screen
+        name="history"
+        options={{ title: "سوابق", tabBarIcon: ({ color }) => <HistoryIcon color={color as string} size={28} /> }}
+      />
       <Tabs.Screen
         name="profile"
         options={{ title: "حساب کاربری", tabBarIcon: ({ color }) => <ProfileIcon color={color as string} size={28} /> }}

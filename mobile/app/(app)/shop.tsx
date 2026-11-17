@@ -46,7 +46,7 @@ export default function ShopScreen() {
         }
         renderItem={({ item }) => (
           <Link href={`/shop-detail/${item.id}`} asChild>
-            <Pressable style={{ flex: 1 }}>
+            <Pressable accessibilityRole="button" style={{ flex: 1 }}>
               <Card style={{ gap: 6 }}>
                 {item.imageUrl ? (
                   <Image source={{ uri: item.imageUrl }} style={{ width: "100%", height: 100, borderRadius: 10 }} />

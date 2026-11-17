@@ -9,9 +9,22 @@ const dateTimeFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   timeZone: "Asia/Tehran",
 });
 
+// همان شکل تاریخ سایت باشگاه: ۱۴۰۵/۰۷/۱۹
+const jalaliNumericFormatter = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: "Asia/Tehran",
+});
+
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   return dateFormatter.format(new Date(value));
+}
+
+export function formatJalaliNumeric(value: string | null | undefined): string {
+  if (!value) return "—";
+  return jalaliNumericFormatter.format(new Date(value));
 }
 
 export function formatDateTime(value: string | null | undefined): string {

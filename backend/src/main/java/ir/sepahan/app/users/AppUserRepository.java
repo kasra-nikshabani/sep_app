@@ -9,5 +9,7 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
 
     Optional<AppUser> findByKeycloakSubjectAndDeletedAtIsNull(UUID keycloakSubject);
 
+    Optional<AppUser> findByNationalCodeAndDeletedAtIsNull(String nationalCode);
+
     List<AppUser> findByDeletedAtIsNullOrderByCreatedAtDesc();
 }

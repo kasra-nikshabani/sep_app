@@ -57,7 +57,7 @@ erDiagram
 ## نکات کلیدی فیلدها
 
 - **`keycloak_subject`**: منبع حقیقت هویت. هر عملیات احراز هویت‌شده در نهایت این مقدار را از JWT (`sub` claim) می‌خواند.
-- **`national_code`/`phone_number`**: هم در Keycloak (به‌عنوان User Attribute، طبق [docs/authentication/keycloak-realm.md](../authentication/keycloak-realm.md)) و هم این‌جا نگهداری می‌شوند — تکرار عمدی است تا این جدول بتواند مستقل کوئری بگیرد (بدون فراخوانی همیشگی Keycloak Admin API)، و همین دو فیلد پل نگاشت به `User` موجود در Django هستند ([ADR-0004](../adr/0004-django-ticketing-sso-integration.md), [ADR-0008](../adr/0008-new-user-jit-provisioning.md)).
+- **`national_code`/`phone_number`**: هم در Keycloak (کد ملی به‌عنوان نام کاربری طبق [ADR-0024](../adr/0024-national-code-as-fan-id-username.md)، تلفن به‌عنوان User Attribute؛ [docs/authentication/keycloak-realm.md](../authentication/keycloak-realm.md)) و هم این‌جا نگهداری می‌شوند — تکرار عمدی است تا این جدول بتواند مستقل کوئری بگیرد (بدون فراخوانی همیشگی Keycloak Admin API)، و همین دو فیلد پل نگاشت به `User` موجود در Django هستند ([ADR-0004](../adr/0004-django-ticketing-sso-integration.md), [ADR-0008](../adr/0008-new-user-jit-provisioning.md)).
 - **`source`**: برای ردیابی این‌که رکورد از کجا آمده (ثبت‌نام مستقیم موبایل، ساخته‌شده توسط ادمین، یا JIT از مسیر Django) — صرفاً برای Observability/Debug، نه منطق تجاری.
 - **`membership_number`**: در لحظه‌ی ساخت `app_user` صادر نمی‌شود؛ در اولین فعال‌سازی واقعی پروفایل صادر می‌شود (جزئیات دقیق در Phase 6).
 - **`qr_payload`**: مطابق الگوی امن سیستم بلیط فوتبال (که در Phase 0 کشف شد: فایل بلیط دیگر مستقیم Serve نمی‌شود)، این‌جا هم فقط محتوای امضاشده ذخیره می‌شود، نه تصویر — تولید تصویر QR در لحظه‌ی نمایش انجام می‌شود.

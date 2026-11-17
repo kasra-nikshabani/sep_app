@@ -1,6 +1,6 @@
 # ADR-0008: Provisioning خودکار کاربر جدید Fan ID در Django (JIT)
 
-- **وضعیت:** پیشنهادی — نیازمند تأیید کارفرما
+- **وضعیت:** جایگزین شده با [ADR-0023](0023-fanid-account-linking-ticket-site.md) -- فرض «شماره توسط Keycloak با OTP تأیید شده» درست نبود؛ ساختن/متصل کردن حساب از روی توکن حذف شد
 - **تصمیم‌گیرندگان:** کارفرما + Architect
 - **مرجع:** پاسخ به Open Question بازمانده از [ADR-0004](0004-django-ticketing-sso-integration.md)
 

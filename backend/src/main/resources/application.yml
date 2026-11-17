@@ -119,6 +119,12 @@ sepahan:
       public-base-url: http://localhost:${server.port}/media
       allowed-content-types: image/jpeg,image/png,image/webp,image/gif
     publish-check-interval-ms: 60000
+    # ورود خودکار اخبار از سایت اصلی باشگاه از طریق Sitemap رسمی آن (ADR-0025)
+    scraper:
+      enabled: true
+      base-url: https://www.sepahansc.com
+      interval-ms: 900000 # هر ۱۵ دقیقه؛ فقط اخبار تازه (Sitemap اخیر + ماه‌های آخر)
+      request-delay-ms: 400 # فاصله‌ی ادب‌مندانه بین درخواست‌ها به سایت باشگاه
   loyalty:
     django:
       base-url: ${INFRA_DJANGO_BASE_URL:http://localhost:8000} # ticket.sepahansc/football_tickets

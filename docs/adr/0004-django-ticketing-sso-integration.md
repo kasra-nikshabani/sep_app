@@ -1,6 +1,6 @@
 # ADR-0004: الگوی اتصال SSO به Django Ticketing
 
-- **وضعیت:** پیاده‌سازی شده (Phase 7 — Branch محلی، هنوز Merge/Deploy نشده)
+- **وضعیت:** پیاده‌سازی شده (Phase 7 — Branch محلی، هنوز Merge/Deploy نشده). **نگاشت بر اساس national_code جایگزین شد با [ADR-0023](0023-fanid-account-linking-ticket-site.md)** (آسیب‌پذیری تصاحب حساب)
 - **تصمیم‌گیرندگان:** کارفرما + Architect
 
 ## Context

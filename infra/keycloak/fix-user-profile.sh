@@ -1,18 +1,17 @@
 #!/bin/bash
-# اجرای دستی، یک‌بار، بعد از هر بار Import تازه‌ی Realm (docker-compose up روی Volume خالی).
+# پروفایل کاربر (Declarative User Profile) را از همان sepahan-realm.json روی Realm در حال اجرا اعمال می‌کند.
 #
-# چرا لازم است (دو باگ واقعی که در تست Runtime واقعی Phase 6 پیدا شدند، نه تنظیم اختیاری):
-#  ۱. پروفایل اعلامی (Declarative User Profile) پیش‌فرض Keycloak فیلدهای email/firstName/
-#     lastName را Required می‌کند. مدل Fan ID ما بر پایه‌ی تلفن/کد ملی است (بدون ایمیل در
-#     ثبت‌نام)، پس بدون این اسکریپت هر کاربر با خطای «Account is not fully set up»
-#     (VERIFY_PROFILE) از ورود Direct Grant/Password باز می‌ماند.
-#  ۲. همان Declarative User Profile به‌صورت پیش‌فرض یک Allowlist سخت‌گیرانه است: تا وقتی
-#     national_code/phone_number صریحاً در این Schema تعریف نشوند، Keycloak آن‌ها را هنگام
-#     ساخت/ویرایش کاربر بی‌صدا نادیده می‌گیرد (نه خطا، فقط ذخیره نمی‌شوند) — یعنی Claim Mapperهای
-#     Client Scope «fan-identity» همیشه خالی برمی‌گشتند چون خودِ Attribute اصلاً ذخیره نشده بود.
+# Import تازه (--import-realm) این پروفایل را خودش می‌سازد: Component «declarative-user-profile»
+# داخل sepahan-realm.json است (با یک Import واقعی روی Keycloak 26.7.1 تأیید شد). این اسکریپت فقط
+# برای Realmی لازم است که از قبل وجود داشته -- Import، Realm موجود را بازنویسی نمی‌کند -- مثل
+# Volume محلی قدیمی. روی Realm تازه بی‌اثر و امن است.
 #
-# این تنظیم بخشی از RealmRepresentation قابل Import نیست (به‌صورت Component داخلی ذخیره
-# می‌شود)، بنابراین نمی‌تواند مثل بقیه‌ی sepahan-realm.json به‌صورت کاملاً Declarative باشد.
+# پروفایل فقط یک منبع دارد: sepahan-realm.json. نسخه‌ی قبلی این اسکریپت کپی جداگانه‌ی خودش را
+# داشت (پروفایل Phase 6) و اجرای آن، اعتبارسنجی‌های ثبت‌نام و «کد ملی = نام کاربری»
+# (docs/adr/0024) را بی‌صدا برمی‌گرداند.
+#
+# ⚠️ روی Realmی که کاربر قدیمی دارد: اول نام کاربری هر کاربر را به کد ملی‌اش تغییر دهید
+# (docs/adr/0024) -- Claim «national_code» از نام کاربری خوانده می‌شود.
 #
 # استفاده:
 #   cd infra && ./keycloak/fix-user-profile.sh
@@ -31,6 +30,8 @@ done < <(grep -vE '^\s*#|^\s*$' .env)
 
 KC_URL="http://localhost:${KEYCLOAK_PORT:-8080}"
 
+PROFILE=$(python3 -c "import json; d = json.load(open('keycloak/import/sepahan-realm.json', encoding='utf-8')); print(d['components']['org.keycloak.userprofile.UserProfileProvider'][0]['config']['kc.user.profile.config'][0])")
+
 ADMIN_TOKEN=$(curl -s -X POST "$KC_URL/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=password" -d "client_id=admin-cli" \
@@ -42,32 +43,11 @@ if [ -z "$ADMIN_TOKEN" ]; then
   exit 1
 fi
 
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X PUT "$KC_URL/admin/realms/sepahan/users/profile" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
-  -d '{
-    "attributes": [
-      {"name": "username", "displayName": "${username}",
-       "validations": {"length": {"min": 3, "max": 255}, "username-prohibited-characters": {}, "up-username-not-idn-homograph": {}},
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false},
-      {"name": "email", "displayName": "${email}",
-       "validations": {"email": {}, "length": {"max": 255}},
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false},
-      {"name": "firstName", "displayName": "${firstName}",
-       "validations": {"length": {"max": 255}, "person-name-prohibited-characters": {}},
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false},
-      {"name": "lastName", "displayName": "${lastName}",
-       "validations": {"length": {"max": 255}, "person-name-prohibited-characters": {}},
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false},
-      {"name": "national_code", "displayName": "کد ملی",
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false},
-      {"name": "phone_number", "displayName": "شماره تلفن",
-       "permissions": {"view": ["admin","user"], "edit": ["admin","user"]}, "multivalued": false}
-    ],
-    "groups": [{"name": "user-metadata", "displayHeader": "User metadata", "displayDescription": "Attributes, which refer to user metadata"}]
-  }')
+HTTP_CODE=$(printf '%s' "$PROFILE" | curl -s -o /dev/null -w "%{http_code}" -X PUT "$KC_URL/admin/realms/sepahan/users/profile" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json; charset=utf-8" --data-binary @-)
 
 if [ "$HTTP_CODE" = "200" ]; then
-  echo "OK — email/firstName/lastName دیگر Required نیستند؛ national_code/phone_number حالا قابل ذخیره‌اند."
+  echo "OK — پروفایل کاربر Realm «sepahan» با sepahan-realm.json یکی شد."
 else
   echo "خطا: HTTP $HTTP_CODE" >&2
   exit 1

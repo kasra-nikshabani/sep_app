@@ -61,20 +61,43 @@ html, body {
     font-family: var(--pf-v5-global--FontFamily--text);
 }
 
+/* موبایل و عرض معمولی: زمینه کرم با هاله طلایی، مثل کارت هواداری اپ */
 .login-pf body {
-    background: var(--sepahan-brand-bg-2);
+    background:
+        radial-gradient(ellipse 80% 42% at 50% 0%, rgba(232, 168, 14, 0.28), rgba(232, 168, 14, 0) 70%),
+        var(--sepahan-form-bg);
+}
+
+.pf-v5-c-login {
+    padding: 28px 16px 40px;
 }
 
 .pf-v5-c-login__main {
-    --pf-v5-c-login__main--BackgroundColor: var(--sepahan-form-bg);
+    --pf-v5-c-login__main--BackgroundColor: var(--sepahan-form-surface);
     color: var(--sepahan-form-text);
-    border-radius: 18px;
+    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    border-top: 4px solid var(--keycloak-card-top-color);
+    box-shadow: 0 18px 48px rgba(156, 114, 9, 0.22);
 }
 
 .pf-v5-c-login__main-header {
-    border-top: 4px solid var(--keycloak-card-top-color);
+    padding-top: 28px;
+    padding-bottom: 4px;
+}
+
+.pf-v5-c-login__main-body {
+    padding-bottom: 8px;
+}
+
+.pf-v5-c-login__main-footer {
+    background: transparent;
+}
+
+.pf-v5-c-login__main-footer-band {
+    background: var(--sepahan-form-bg);
+    border-top: 1px solid var(--sepahan-form-border);
+    padding: 16px 20px 20px;
 }
 
 .pf-v5-c-title,
@@ -90,27 +113,36 @@ label {
 }
 
 /* برچسب کوچک بالای فرم (پیش‌فرض Uppercase/Letter-spacing سنگین PatternFly حذف شد) */
+#kc-header {
+    margin-bottom: 18px;
+}
+
 #kc-header-wrapper {
     text-transform: none;
     letter-spacing: 0;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--sepahan-brand-muted) !important;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.7;
+    color: var(--sepahan-form-text) !important;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
+    text-align: center;
 }
 
 #kc-header-wrapper::before {
     content: "";
-    display: inline-block;
-    width: 28px;
-    height: 28px;
+    display: block;
+    width: 88px;
+    height: 88px;
     flex-shrink: 0;
     background-image: var(--keycloak-logo-url);
     background-size: contain;
     background-repeat: no-repeat;
+    background-position: center;
+    filter: drop-shadow(0 8px 16px rgba(156, 114, 9, 0.28));
 }
 
 .pf-v5-c-button.pf-m-primary {
@@ -118,17 +150,96 @@ label {
     --pf-v5-c-button--m-primary--hover--Color: #14110A;
     --pf-v5-c-button--m-primary--focus--Color: #14110A;
     --pf-v5-c-button--m-primary--active--Color: #14110A;
-    border-radius: 10px;
-    font-weight: 500;
+    --pf-v5-c-button--m-primary--BackgroundColor: #E8A80E;
+    --pf-v5-c-button--m-primary--hover--BackgroundColor: #F3C765;
+    --pf-v5-c-button--m-primary--active--BackgroundColor: #9C7209;
+    border-radius: 12px;
+    font-weight: 700;
+    min-height: 48px;
     padding-top: 12px;
     padding-bottom: 12px;
+    box-shadow: 0 8px 18px rgba(232, 168, 14, 0.35);
+}
+
+#kc-registration {
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.8;
+}
+
+#kc-registration a {
+    font-weight: 700;
+    text-decoration: none;
+    border-bottom: 2px solid #E8A80E;
+    padding-bottom: 1px;
+}
+
+.pf-v5-c-form__label-required {
+    color: #9C7209;
+}
+
+/* دکمه نمایش گذرواژه و «ورود مجدد» داخل همان کادر فیلد بمانند، نه یک مربع تیره جدا */
+.pf-v5-c-input-group {
+    background: var(--sepahan-form-bg);
+    border: 1px solid var(--sepahan-form-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+.pf-v5-c-input-group:focus-within {
+    border-color: #E8A80E;
+    box-shadow: 0 0 0 3px rgba(232, 168, 14, 0.25);
+}
+.pf-v5-c-input-group .pf-v5-c-form-control {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+.pf-v5-c-button.pf-m-control {
+    --pf-v5-c-button--m-control--BackgroundColor: transparent;
+    --pf-v5-c-button--m-control--Color: #4D4530;
+    --pf-v5-c-button--m-control--hover--BackgroundColor: rgba(232, 168, 14, 0.18);
+    --pf-v5-c-button--m-control--hover--Color: #14110A;
+    --pf-v5-c-button--m-control--active--BackgroundColor: rgba(232, 168, 14, 0.28);
+    background: transparent !important;
+    color: #4D4530 !important;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 46px;
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+    border-inline-start: 1px solid var(--sepahan-form-border);
+    min-width: 48px;
+}
+
+.pf-v5-c-alert {
+    --pf-v5-c-alert--BackgroundColor: #FBF1D9;
+    background: #FBF1D9;
+    color: #14110A;
+    border-radius: 12px;
+    border: 1px solid #E3DAC0;
+}
+.pf-v5-c-alert .pf-v5-c-alert__title,
+.pf-v5-c-alert .pf-v5-c-alert__description,
+.pf-v5-c-alert a {
+    color: #14110A;
+}
+
+.pf-v5-c-form__group {
+    margin-bottom: 2px;
 }
 
 /* Wrapper واقعی هر Input یک <span> جداست، نه خودِ <input> (تأیید زنده از DOM واقعی) */
 .pf-v5-c-form-control {
-    background-color: var(--sepahan-form-surface) !important;
+    background-color: var(--sepahan-form-bg) !important;
     border: 1px solid var(--sepahan-form-border) !important;
-    border-radius: 9px !important;
+    border-radius: 12px !important;
+    min-height: 46px;
+}
+.pf-v5-c-form-control:focus-within {
+    border-color: #E8A80E !important;
+    box-shadow: 0 0 0 3px rgba(232, 168, 14, 0.25);
 }
 .pf-v5-c-form-control input,
 .pf-v5-c-form-control select {

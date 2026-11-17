@@ -50,6 +50,11 @@ public class AppUser extends BaseEntity {
         return keycloakSubject;
     }
 
+    /** حساب Keycloak عوض شده (حذف و ساخت دوباره با همان کد ملی) ولی ردیف اپ همان هوادار است. */
+    public void setKeycloakSubject(UUID keycloakSubject) {
+        this.keycloakSubject = keycloakSubject;
+    }
+
     public String getNationalCode() {
         return nationalCode;
     }

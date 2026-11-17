@@ -2,16 +2,50 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "backend",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd backend && export $(grep -E '^BACKEND_DB_PASSWORD=' ../infra/.env) && export INFRA_REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' ../infra/.env | cut -d= -f2-) && export $(grep -E '^LOYALTY_DJANGO_SERVICE_TOKEN=' ../infra/.env) && exec ./mvnw spring-boot:run"
+      ],
+      "port": 8081
+    },
+    {
       "name": "admin-panel",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "admin-panel", "run", "dev", "--", "-p", "3001"],
+      "runtimeArgs": [
+        "--prefix",
+        "admin-panel",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3001"
+      ],
       "port": 3001
     },
     {
       "name": "mobile-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "mobile", "run", "web", "--", "--port", "8082"],
+      "runtimeArgs": [
+        "--prefix",
+        "mobile",
+        "run",
+        "web",
+        "--",
+        "--port",
+        "8082"
+      ],
       "port": 8082
+    },
+    {
+      "name": "ticket-site-local",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "bash /tmp/claude-1000/-home-kasra-Desktop-sepapp/191765eb-bcda-476e-93e0-c37b6c0c6674/scratchpad/run-e2e.sh runserver 127.0.0.1:8010 --noreload 2>&1 | tee /tmp/claude-1000/-home-kasra-Desktop-sepapp/191765eb-bcda-476e-93e0-c37b6c0c6674/scratchpad/ticket-server.log"
+      ],
+      "port": 8010
     }
   ]
 }

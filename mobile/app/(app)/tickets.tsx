@@ -44,7 +44,7 @@ export default function TicketsScreen() {
         }
         renderItem={({ item }) => (
           <Link href={`/event-seats/${item.id}`} asChild>
-            <Pressable>
+            <Pressable accessibilityRole="button">
               <Card>
                 <ThemedText variant="h2" style={{ fontSize: 17 }}>
                   {item.title}

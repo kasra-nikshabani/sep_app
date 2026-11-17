@@ -7,3 +7,6 @@ sepahan:
   loyalty:
     django:
       service-token: test-token-not-used
+  news:
+    scraper:
+      enabled: false # تست‌ها هرگز نباید به اینترنت وصل شوند

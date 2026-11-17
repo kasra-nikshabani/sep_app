@@ -39,7 +39,29 @@ class JitInsertHelper {
     AppUser insertUser(Jwt jwt, UUID keycloakSubject) {
         String nationalCode = jwt.getClaimAsString("national_code");
         String phoneNumber = jwt.getClaimAsString("phone_number");
-        return appUserRepository.saveAndFlush(new AppUser(keycloakSubject, nationalCode, phoneNumber));
+        AppUser user = new AppUser(keycloakSubject, nationalCode, phoneNumber);
+        user.setDisplayName(displayName(jwt));
+        return appUserRepository.saveAndFlush(user);
+    }
+
+    /**
+     * کد ملی از قبل یک ردیف دارد، ولی Subject توکن فعلی با آن یکی نیست (حساب Keycloak حذف و
+     * دوباره ساخته شده). طبق ADR-0024 همان ردیف به حساب باقی‌مانده منتقل می‌شود، وگرنه هر ورود
+     * با خطای یکتایی کد ملی ۵۰۰ می‌دهد.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    AppUser rebindKeycloakSubject(UUID userId, UUID keycloakSubject, String displayName) {
+        AppUser user = appUserRepository.findById(userId).orElseThrow();
+        user.setKeycloakSubject(keycloakSubject);
+        if ((user.getDisplayName() == null || user.getDisplayName().isBlank()) && displayName != null && !displayName.isBlank()) {
+            user.setDisplayName(displayName);
+        }
+        return appUserRepository.saveAndFlush(user);
+    }
+
+    private static String displayName(Jwt jwt) {
+        String name = jwt.getClaimAsString("name");
+        return name == null || name.isBlank() ? null : name;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

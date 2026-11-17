@@ -6,19 +6,8 @@ import { Pill } from "@/components/Pill";
 import { ErrorState } from "@/components/ErrorState";
 import { spacing } from "@/theme";
 import { useTheme } from "@/hooks/useTheme";
-import { useMyOrders } from "@/features/shop/api";
+import { useMyOrders, ORDER_STATUS } from "@/features/shop/api";
 import { formatDate, formatRial, toPersianDigits } from "@/lib/format";
-
-const statusMeta: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" }> = {
-  pending_payment: { label: "در انتظار پرداخت", tone: "warning" },
-  paid: { label: "پرداخت‌شده", tone: "info" },
-  shipped: { label: "ارسال‌شده", tone: "info" },
-  delivered: { label: "تحویل‌شده", tone: "success" },
-  cancelled: { label: "لغوشده", tone: "danger" },
-  expired: { label: "منقضی", tone: "danger" },
-  return_requested: { label: "درخواست مرجوعی", tone: "warning" },
-  returned: { label: "مرجوع‌شده", tone: "info" },
-};
 
 export default function OrdersScreen() {
   const { colors } = useTheme();
@@ -46,7 +35,7 @@ export default function OrdersScreen() {
               <ThemedText variant="caption" muted>
                 {formatDate(item.createdAt)}
               </ThemedText>
-              <Pill label={statusMeta[item.status]?.label ?? item.status} tone={statusMeta[item.status]?.tone ?? "info"} />
+              <Pill label={ORDER_STATUS[item.status]?.label ?? item.status} tone={ORDER_STATUS[item.status]?.tone ?? "info"} />
             </View>
             {item.items.map((i, idx) => (
               <ThemedText key={idx} variant="caption">

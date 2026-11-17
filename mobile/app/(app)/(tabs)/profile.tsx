@@ -1,4 +1,4 @@
-import { View, Pressable } from "react-native";
+import { View, Pressable, ActivityIndicator } from "react-native";
 import { Link } from "expo-router";
 import { Screen, Card } from "@/components/Screen";
 import { ThemedText } from "@/components/ThemedText";
@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { formatDate, toPersianDigits } from "@/lib/format";
 import { ProfileIcon, BellIcon, ReceiptIcon, TicketIcon, GiftIcon, ArrowIcon, type IconComponent } from "@/components/Icon";
 import { BrandMark } from "@/components/BrandMark";
+import { ErrorState } from "@/components/ErrorState";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -25,6 +26,7 @@ function AccountLink({ href, label, Icon }: { href: string; label: string; Icon:
   return (
     <Link href={href as never} asChild>
       <Pressable
+        accessibilityRole="button"
         style={{
           flexDirection: "row",
           alignItems: "center",
@@ -42,9 +44,13 @@ function AccountLink({ href, label, Icon }: { href: string; label: string; Icon:
   );
 }
 
+function shown(value: string | null | undefined): string {
+  return value && value.trim() ? value : "ثبت نشده";
+}
+
 export default function ProfileScreen() {
   const { colors } = useTheme();
-  const { data: me } = useMe();
+  const { data: me, isLoading, isError, refetch } = useMe();
   const { session, logout } = useAuth();
 
   return (
@@ -69,14 +75,20 @@ export default function ProfileScreen() {
         <ThemedText variant="h2">{me?.displayName ?? session?.displayName ?? "—"}</ThemedText>
       </View>
 
-      <Card style={{ gap: spacing.sm }}>
-        <Row label="موبایل" value={toPersianDigits(me?.phoneNumber)} />
-        <Row label="کد ملی" value={toPersianDigits(me?.nationalCode)} />
-        <Row label="شماره عضویت" value={me?.membershipNumber ?? "—"} />
-        <Row label="شهر" value={me?.city ?? "—"} />
-        <Row label="تاریخ عضویت" value={formatDate(me?.joinedAt)} />
-        {session?.roles.includes("vip") && <Row label="نوع عضویت" value="VIP" />}
-      </Card>
+      {isError && !me ? (
+        <ErrorState onRetry={refetch} />
+      ) : isLoading && !me ? (
+        <ActivityIndicator color={colors.accent} />
+      ) : (
+        <Card style={{ gap: spacing.sm }}>
+          <Row label="موبایل" value={me?.phoneNumber ? toPersianDigits(me.phoneNumber) : "ثبت نشده"} />
+          <Row label="کد ملی" value={me?.nationalCode ? toPersianDigits(me.nationalCode) : "ثبت نشده"} />
+          <Row label="شماره عضویت" value={shown(me?.membershipNumber)} />
+          <Row label="شهر" value={shown(me?.city)} />
+          <Row label="تاریخ عضویت" value={me?.joinedAt ? formatDate(me.joinedAt) : "ثبت نشده"} />
+          {session?.roles.includes("vip") && <Row label="نوع عضویت" value="VIP" />}
+        </Card>
+      )}
 
       <Card style={{ paddingVertical: spacing.xs }}>
         <AccountLink href="/notifications" label="اعلان‌ها" Icon={BellIcon} />

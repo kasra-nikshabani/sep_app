@@ -58,6 +58,13 @@ public class Article extends BaseEntity {
     @Column(name = "scheduled_at")
     private OffsetDateTime scheduledAt;
 
+    /** شناسه/آدرس خبر در سایت اصلی باشگاه (sepahansc.com) برای خبرهای واردشده؛ برای خبرهای دستی null. */
+    @Column(name = "source_id")
+    private Long sourceId;
+
+    @Column(name = "source_url", length = 600)
+    private String sourceUrl;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(name = "article_tag", schema = "news",
             joinColumns = @JoinColumn(name = "article_id"),
@@ -162,6 +169,19 @@ public class Article extends BaseEntity {
 
     public void setScheduledAt(OffsetDateTime scheduledAt) {
         this.scheduledAt = scheduledAt;
+    }
+
+    public Long getSourceId() {
+        return sourceId;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSource(Long sourceId, String sourceUrl) {
+        this.sourceId = sourceId;
+        this.sourceUrl = sourceUrl;
     }
 
     public Set<Tag> getTags() {

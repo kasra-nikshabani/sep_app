@@ -50,6 +50,17 @@ export type Order = {
   items: OrderItem[];
 };
 
+export const ORDER_STATUS: Record<string, { label: string; tone: "success" | "warning" | "danger" | "info" }> = {
+  pending_payment: { label: "در انتظار پرداخت", tone: "warning" },
+  paid: { label: "پرداخت‌شده", tone: "info" },
+  shipped: { label: "ارسال‌شده", tone: "info" },
+  delivered: { label: "تحویل‌شده", tone: "success" },
+  cancelled: { label: "لغوشده", tone: "danger" },
+  expired: { label: "منقضی", tone: "danger" },
+  return_requested: { label: "درخواست مرجوعی", tone: "warning" },
+  returned: { label: "مرجوع‌شده", tone: "info" },
+};
+
 export function useCategories() {
   const { apiFetch } = useApi();
   return useQuery({ queryKey: ["shop", "categories"], queryFn: () => apiFetch<Category[]>("/api/v1/shop/categories") });
